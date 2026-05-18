@@ -4,7 +4,7 @@ import base64
 import json
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
-from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
+from googleapiclient.http import MediaIoBaseUpload, MediaIoBaseDownload
 import io
 
 # CONFIGURAÇÃO DA PÁGINA
@@ -130,7 +130,9 @@ def salvar_historico_completo_drive(prefixo, val_luz, total_kwh, leitura_ant, le
     
     # Verifica se já existe para atualizar ou criar novo
     file_id = buscar_arquivo_no_drive(nome_txt)
-    media = MediaFileUpload(io.BytesIO(conteudo.encode('utf-8')), mimetype='text/plain', resumable=True)
+    
+    arquivo_memoria = io.BytesIO(conteudo.encode('utf-8'))
+    media = MediaIoBaseUpload(arquivo_memoria, mimetype='text/plain', resumable=True)
     
     if file_id:
         drive_service.files().update(fileId=file_id, media_body=media).execute()
@@ -155,8 +157,8 @@ def upload_documento_drive(arquivo_st, nome_final):
     """Faz o upload do PDF/Imagem diretamente para a pasta do Drive"""
     file_id = buscar_arquivo_no_drive(nome_final)
     
-    # Criar um arquivo temporário em memória para enviar
-    media = MediaFileUpload(io.BytesIO(arquivo_st.getvalue()), mimetype=arquivo_st.type, resumable=True)
+    arquivo_memoria = io.BytesIO(arquivo_st.getvalue())
+    media = MediaIoBaseUpload(arquivo_memoria, mimetype=arquivo_st.type, resumable=True)
     
     if file_id:
         drive_service.files().update(fileId=file_id, media_body=media).execute()
@@ -177,8 +179,8 @@ def buscar_leitura_atual_anterior(mes_selecionado):
             prefixo_ant = MAPA_MESES[mes_anterior]
             dados = carregar_historico_completo_drive(prefixo_ant)
             return dados[3] 
-    except:
-        pass
+    except Exception as e:
+        st.error(f"Erro ao buscar leitura anterior: {e}")
     return 0.0
 
 def listar_todos_arquivos_drive():
