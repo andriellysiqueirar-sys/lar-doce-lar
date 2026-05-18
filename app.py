@@ -27,6 +27,18 @@ else:
 # COLOQUE O ID DA SUA PASTA DO DRIVE AQUI DENTRO DAS ASPAS:
 PASTA_DRIVE_ID = "1uM5fKwOJyo418E-Te3EpyPuLMvGpVdQH" # <- SUBSTITUA APENAS ESSE TEXTO PELO ID DA SUA PASTA
 
+# --- TESTE DE DIAGNÓSTICO DA PASTA ---
+# Esse bloco vai nos dizer na hora se o ID acima está correto e acessível
+try:
+    pasta = drive_service.files().get(
+        fileId=PASTA_DRIVE_ID,
+        fields="id,name"
+    ).execute()
+    st.success(f"✅ Pasta encontrada no Drive: {pasta['name']}")
+except Exception as e:
+    st.error(f"❌ Erro acessando pasta: {e}")
+
+
 NOME_IMAGEM = "lar_doce_lar.png"
 IMAGEM_NAZARE = "Nazare.jpg"
 
@@ -57,7 +69,7 @@ if 'logado' not in st.session_state:
 # --- FUNÇÕES PARA CONVERSÃO DE IMAGENS EM BASE64 ---
 def obter_imagem_base64(caminho_img):
     if os.path.exists(caminho_img):
-        with open(caminho_img, "rb") as f:
+        with open(caminhi_img, "rb") as f:
             data = f.read()
         return base64.b64encode(data).decode()
     return None
