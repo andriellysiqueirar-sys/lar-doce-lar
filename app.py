@@ -15,7 +15,6 @@ st.set_page_config(
 )
 
 # --- CONEXÃO COM O GOOGLE DRIVE ---
-# Aqui ele puxa as credenciais que você salvou nos Secrets do Streamlit
 if "google_credentials" in st.secrets:
     credenciais_dict = json.loads(st.secrets["google_credentials"])
     creds = Credentials.from_service_account_info(credenciais_dict, scopes=["https://www.googleapis.com/auth/drive"])
@@ -24,20 +23,8 @@ else:
     st.error("Erro: As credenciais do Google Drive não foram encontradas nos Secrets do Streamlit.")
     st.stop()
 
-# COLOQUE O ID DA SUA PASTA DO DRIVE AQUI DENTRO DAS ASPAS:
-PASTA_DRIVE_ID = "1uM5fKwOJyo418E-Te3EpyPuLMvGpVdQH" # <- SUBSTITUA APENAS ESSE TEXTO PELO ID DA SUA PASTA
-
-# --- TESTE DE DIAGNÓSTICO DA PASTA ---
-# Esse bloco vai nos dizer na hora se o ID acima está correto e acessível
-try:
-    pasta = drive_service.files().get(
-        fileId=PASTA_DRIVE_ID,
-        fields="id,name"
-    ).execute()
-    st.success(f"✅ Pasta encontrada no Drive: {pasta['name']}")
-except Exception as e:
-    st.error(f"❌ Erro acessando pasta: {e}")
-
+# ID DA PASTA DO DRIVE
+PASTA_DRIVE_ID = "1uM5fKwOJyo418E-Te3EpyPuLMvGpVdQH"
 
 NOME_IMAGEM = "lar_doce_lar.png"
 IMAGEM_NAZARE = "Nazare.jpg"
@@ -125,27 +112,13 @@ st.markdown(f"""
     </style>
 """, unsafe_allow_html=True)
 
-# --- NOVAS FUNÇÕES CONECTADAS AO GOOGLE DRIVE ---
+# --- FUNÇÕES CONECTADAS AO GOOGLE DRIVE ---
 
-# --- FUNÇÃO ALTERADA PARA DEBUG TEMPORÁRIO ---
 def buscar_arquivo_no_drive(nome_arquivo):
-    """Procura um arquivo pelo nome dentro da pasta específica do Drive e retorna o ID e o Conteúdo"""
-    st.write("PROCURANDO:", nome_arquivo)
-    query = (
-        f"'{PASTA_DRIVE_ID}' in parents "
-        f"and name = '{nome_arquivo}' "
-        f"and trashed = false"
-    )
-    st.write("QUERY:", query)
-    
-    resultados = drive_service.files().list(
-        q=query,
-        fields="files(id, name)"
-    ).execute()
+    """Procura um arquivo pelo nome dentro da pasta específica do Drive e retorna o ID"""
+    query = f"'{PASTA_DRIVE_ID}' in parents and name = '{nome_arquivo}' and trashed = false"
+    resultados = drive_service.files().list(q=query, fields="files(id, name)").execute()
     arquivos = resultados.get('files', [])
-    
-    st.write("RESULTADO:", arquivos)
-    
     if arquivos:
         return arquivos[0]['id']
     return None
@@ -154,9 +127,7 @@ def salvar_historico_completo_drive(prefixo, val_luz, total_kwh, leitura_ant, le
     nome_txt = f"{prefixo} - valores.txt"
     conteudo = f"{val_luz}\n{total_kwh}\n{leitura_ant}\n{leitura_at}\n{val_agua}\n"
     
-    # Verifica se já existe para atualizar ou criar novo
     file_id = buscar_arquivo_no_drive(nome_txt)
-    
     arquivo_memoria = io.BytesIO(conteudo.encode('utf-8'))
     media = MediaIoBaseUpload(arquivo_memoria, mimetype='text/plain', resumable=True)
     
@@ -182,7 +153,6 @@ def carregar_historico_completo_drive(prefixo):
 def upload_documento_drive(arquivo_st, nome_final):
     """Faz o upload do PDF/Imagem diretamente para a pasta do Drive"""
     file_id = buscar_arquivo_no_drive(nome_final)
-    
     arquivo_memoria = io.BytesIO(arquivo_st.getvalue())
     media = MediaIoBaseUpload(arquivo_memoria, mimetype=arquivo_st.type, resumable=True)
     
@@ -194,8 +164,7 @@ def upload_documento_drive(arquivo_st, nome_final):
 
 def baixar_arquivo_do_drive_para_download(file_id):
     requisicao = drive_service.files().get_media(fileId=file_id)
-    conteudo = requisicao.execute()
-    return conteudo
+    return requisicao.execute()
 
 def buscar_leitura_atual_anterior(mes_selecionado):
     try:
@@ -209,19 +178,11 @@ def buscar_leitura_atual_anterior(mes_selecionado):
         st.error(f"Erro ao buscar leitura anterior: {e}")
     return 0.0
 
-# --- FUNÇÃO ALTERADA PARA DEBUG TEMPORÁRIO ---
 def listar_todos_arquivos_drive():
     try:
         query = f"'{PASTA_DRIVE_ID}' in parents and trashed = false"
-        resultados = drive_service.files().list(
-            q=query,
-            fields="files(id,name)"
-        ).execute()
+        resultados = drive_service.files().list(q=query, fields="files(name)").execute()
         arquivos = resultados.get('files', [])
-        
-        # Mostra o resultado cru na interface para investigarmos
-        st.write("DEBUG DRIVE:", arquivos)
-        
         return [arq['name'] for arq in arquivos]
     except Exception as e:
         st.error(f"Erro listando Drive: {e}")
@@ -324,7 +285,7 @@ else:
                         extensao = os.path.splitext(arquivo_agua.name)[1].lower()
                         upload_documento_drive(arquivo_agua, f"{prefixo_data} - água{extensao}")
                     
-                    st.success(f"Dados e fórmulas de {mes_ano} published no Google Drive com sucesso!")
+                    st.success(f"Dados e fórmulas de {mes_ano} publicados no Google Drive com sucesso!")
 
         with aba_historio:
             with st.spinner("Buscando lista de arquivos no Drive..."):
@@ -407,7 +368,6 @@ else:
         st.markdown("<h4 style='text-align: center;'>📂 Baixar Faturas Originais</h4>", unsafe_allow_html=True)
         col_down_1, col_down_2 = st.columns(2)
         
-        # Busca Dinâmica de Luz no Drive
         id_luz_drive = None
         for ext in ['.pdf', '.jpg', '.jpeg', '.png']:
             id_luz_drive = buscar_arquivo_no_drive(f"{codigo_mes} - luz{ext}")
@@ -427,7 +387,6 @@ else:
             else:
                 st.info("ℹ️ Luz ausente.")
                 
-        # Busca Dinâmica de Água no Drive
         id_agua_drive = None
         for ext in ['.pdf', '.jpg', '.jpeg', '.png']:
             id_agua_drive = buscar_arquivo_no_drive(f"{codigo_mes} - água{ext}")
