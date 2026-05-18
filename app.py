@@ -4,7 +4,7 @@ import base64
 import json
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
-from googleapiclient.http import MediaIoBaseUpload
+from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
 import io
 
 # CONFIGURAÇÃO DA PÁGINA
@@ -156,15 +156,7 @@ def upload_documento_drive(arquivo_st, nome_final):
     file_id = buscar_arquivo_no_drive(nome_final)
     
     # Criar um arquivo temporário em memória para enviar
-    arquivo_memoria = io.BytesIO(
-    conteudo.encode("utf-8")
-    )
-
-    media = MediaIoBaseUpload(
-    arquivo_memoria,
-    mimetype='text/plain',
-    resumable=True
-    )
+    media = MediaFileUpload(io.BytesIO(arquivo_st.getvalue()), mimetype=arquivo_st.type, resumable=True)
     
     if file_id:
         drive_service.files().update(fileId=file_id, media_body=media).execute()
