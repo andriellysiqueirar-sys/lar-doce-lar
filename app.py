@@ -69,7 +69,7 @@ if 'logado' not in st.session_state:
 # --- FUNÇÕES PARA CONVERSÃO DE IMAGENS EM BASE64 ---
 def obter_imagem_base64(caminho_img):
     if os.path.exists(caminho_img):
-        with open(caminhi_img, "rb") as f:
+        with open(caminho_img, "rb") as f:
             data = f.read()
         return base64.b64encode(data).decode()
     return None
