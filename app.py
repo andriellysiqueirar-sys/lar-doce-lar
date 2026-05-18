@@ -109,6 +109,15 @@ st.markdown(f"""
     .item-nazare {{ flex: 1; min-width: 120px; text-align: center; }}
     .label-nazare {{ color: #21100B !important; font-size: 14px; font-weight: bold; margin-bottom: 5px; text-shadow: 0px 0px 4px rgba(255, 255, 255, 0.8); }}
     .val-nazare {{ color: #000000 !important; font-size: 22px; font-weight: bold; text-shadow: 0px 0px 5px rgba(255, 255, 255, 0.9); }}
+    
+    /* ESCONDER ELEMENTOS DO STREAMLIT COMMUNITY CLOUD */
+    #MainMenu {{ visibility: hidden; }}
+    header {{ visibility: hidden; }}
+    footer {{ visibility: hidden; }}
+    [data-testid="stToolbar"] {{ display: none; }}
+    [data-testid="stDecoration"] {{ display: none; }}
+    [data-testid="stStatusWidget"] {{ display: none; }}
+    button[kind="header"] {{ display: none; }}
     </style>
 """, unsafe_allow_html=True)
 
@@ -123,9 +132,9 @@ def buscar_arquivo_no_drive(nome_arquivo):
         return arquivos[0]['id']
     return None
 
-def salvar_historico_completo_drive(prefixo, val_luz, total_kwh, leitura_ant, leitura_at, val_agua):
+def salvar_historico_completo_drive(prefixo, val_luz, total_kwh, leitura_ant, lecture_at, val_agua):
     nome_txt = f"{prefixo} - valores.txt"
-    conteudo = f"{val_luz}\n{total_kwh}\n{leitura_ant}\n{leitura_at}\n{val_agua}\n"
+    conteudo = f"{val_luz}\n{total_kwh}\n{leitura_ant}\n{lecture_at}\n{val_agua}\n"
     
     file_id = buscar_arquivo_no_drive(nome_txt)
     arquivo_memoria = io.BytesIO(conteudo.encode('utf-8'))
@@ -239,7 +248,7 @@ else:
             mes_ano = st.selectbox("Selecione o Mês/Ano de referência:", LISTA_MESES, index=4)
             prefixo_data = MAPA_MESES[mes_ano]
             
-            luz_fatura, kwh_fatura, medidor_ant, medidor_at, agua_fatura = carregar_historico_completo_drive(prefixo_data)
+            luz_fatura, kwh_fatura, medidor_ant, lecture_at, agua_fatura = carregar_historico_completo_drive(prefixo_data)
             
             if medidor_ant == 0.0:
                 medidor_ant = buscar_leitura_atual_anterior(mes_ano)
@@ -256,11 +265,11 @@ else:
             with col_m1:
                 leitura_ant = st.number_input("Leitura Anterior do Medidor Interno", min_value=0.0, step=0.1, value=medidor_ant)
             with col_m2:
-                leitura_at = st.number_input("Leitura Atual do Medidor Interno", min_value=0.0, step=0.1, value=medidor_at)
+                lecture_at = st.number_input("Leitura Atual do Medidor Interno", min_value=0.0, step=0.1, value=lecture_at)
             
             if total_kwh > 0:
                 valor_por_kwh = val_luz / total_kwh
-                consumo_dry_rafa = leitura_at - leitura_ant if leitura_at >= leitura_ant else 0.0
+                consumo_dry_rafa = lecture_at - leitura_ant if lecture_at >= leitura_ant else 0.0
                 custo_dry_rafa = consumo_dry_rafa * valor_por_kwh
                 custo_vicente = val_luz - custo_dry_rafa
                 
@@ -275,7 +284,7 @@ else:
             
             if st.button("Salvar e Publicar no Sistema"):
                 with st.spinner("Salvando diretamente no Google Drive..."):
-                    salvar_historico_completo_drive(prefixo_data, val_luz, total_kwh, leitura_ant, leitura_at, val_agua)
+                    salvar_historico_completo_drive(prefixo_data, val_luz, total_kwh, leitura_ant, lecture_at, val_agua)
                     
                     if arquivo_luz is not None:
                         extensao = os.path.splitext(arquivo_luz.name)[1].lower()
@@ -309,11 +318,11 @@ else:
         codigo_mes = MAPA_MESES[mes_selecionado]
         
         with st.spinner("Carregando valores do Drive..."):
-            val_luz, total_kwh, leitura_ant, leitura_at, val_agua = carregar_historico_completo_drive(codigo_mes)
+            val_luz, total_kwh, leitura_ant, lecture_at, val_agua = carregar_historico_completo_drive(codigo_mes)
         
-        if total_kwh > 0 and leitura_at >= leitura_ant:
+        if total_kwh > 0 and lecture_at >= leitura_ant:
             valor_por_kwh = val_luz / total_kwh
-            consumo_dry_rafa = leitura_at - leitura_ant
+            consumo_dry_rafa = lecture_at - leitura_ant
             custo_dry_rafa = consumo_dry_rafa * valor_por_kwh
             
             if st.session_state.perfil == "marido":
