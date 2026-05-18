@@ -195,10 +195,23 @@ def buscar_leitura_atual_anterior(mes_selecionado):
         st.error(f"Erro ao buscar leitura anterior: {e}")
     return 0.0
 
+# --- FUNÇÃO ALTERADA PARA DEBUG TEMPORÁRIO ---
 def listar_todos_arquivos_drive():
-    query = f"'{PASTA_DRIVE_ID}' in parents and trashed = false"
-    resultados = drive_service.files().list(q=query, fields="files(name)").execute()
-    return [arq['name'] for arq in resultados.get('files', [])]
+    try:
+        query = f"'{PASTA_DRIVE_ID}' in parents and trashed = false"
+        resultados = drive_service.files().list(
+            q=query,
+            fields="files(id,name)"
+        ).execute()
+        arquivos = resultados.get('files', [])
+        
+        # Mostra o resultado cru na interface para investigarmos
+        st.write("DEBUG DRIVE:", arquivos)
+        
+        return [arq['name'] for arq in arquivos]
+    except Exception as e:
+        st.error(f"Erro listando Drive: {e}")
+    return []
 
 # ==========================================
 # 1. TELA DE LOGIN
