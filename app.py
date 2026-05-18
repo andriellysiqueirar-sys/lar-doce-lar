@@ -118,6 +118,10 @@ st.markdown(f"""
     [data-testid="stDecoration"] {{ display: none; }}
     [data-testid="stStatusWidget"] {{ display: none; }}
     button[kind="header"] {{ display: none; }}
+    
+    /* BOTÕES FLUTUANTES */
+    .st-emotion-cache-1dp5vir {{ display: none !important; }}
+    .st-emotion-cache-zq5wmm {{ display: none !important; }}
     </style>
 """, unsafe_allow_html=True)
 
