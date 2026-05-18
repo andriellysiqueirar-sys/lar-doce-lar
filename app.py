@@ -127,11 +127,25 @@ st.markdown(f"""
 
 # --- NOVAS FUNÇÕES CONECTADAS AO GOOGLE DRIVE ---
 
+# --- FUNÇÃO ALTERADA PARA DEBUG TEMPORÁRIO ---
 def buscar_arquivo_no_drive(nome_arquivo):
     """Procura um arquivo pelo nome dentro da pasta específica do Drive e retorna o ID e o Conteúdo"""
-    query = f"'{PASTA_DRIVE_ID}' in parents and name = '{nome_arquivo}' and trashed = false"
-    resultados = drive_service.files().list(q=query, fields="files(id, name)").execute()
+    st.write("PROCURANDO:", nome_arquivo)
+    query = (
+        f"'{PASTA_DRIVE_ID}' in parents "
+        f"and name = '{nome_arquivo}' "
+        f"and trashed = false"
+    )
+    st.write("QUERY:", query)
+    
+    resultados = drive_service.files().list(
+        q=query,
+        fields="files(id, name)"
+    ).execute()
     arquivos = resultados.get('files', [])
+    
+    st.write("RESULTADO:", arquivos)
+    
     if arquivos:
         return arquivos[0]['id']
     return None
@@ -310,7 +324,7 @@ else:
                         extensao = os.path.splitext(arquivo_agua.name)[1].lower()
                         upload_documento_drive(arquivo_agua, f"{prefixo_data} - água{extensao}")
                     
-                    st.success(f"Dados e fórmulas de {mes_ano} publicados no Google Drive com sucesso!")
+                    st.success(f"Dados e fórmulas de {mes_ano} published no Google Drive com sucesso!")
 
         with aba_historio:
             with st.spinner("Buscando lista de arquivos no Drive..."):
@@ -391,44 +405,4 @@ else:
         """, unsafe_allow_html=True)
 
         st.markdown("<h4 style='text-align: center;'>📂 Baixar Faturas Originais</h4>", unsafe_allow_html=True)
-        col_down_1, col_down_2 = st.columns(2)
-        
-        # Busca Dinâmica de Luz no Drive
-        id_luz_drive = None
-        for ext in ['.pdf', '.jpg', '.jpeg', '.png']:
-            id_luz_drive = buscar_arquivo_no_drive(f"{codigo_mes} - luz{ext}")
-            if id_luz_drive:
-                nome_luz_final = f"{codigo_mes} - luz{ext}"
-                break
-        
-        with col_down_1:
-            if id_luz_drive:
-                conteudo_luz = baixar_arquivo_do_drive_para_download(id_luz_drive)
-                st.download_button(
-                    label="📥 Fatura Luz",
-                    data=conteudo_luz,
-                    file_name=nome_luz_final,
-                    mime="application/octet-stream"
-                )
-            else:
-                st.info("ℹ️ Luz ausente.")
-                
-        # Busca Dinâmica de Água no Drive
-        id_agua_drive = None
-        for ext in ['.pdf', '.jpg', '.jpeg', '.png']:
-            id_agua_drive = buscar_arquivo_no_drive(f"{codigo_mes} - água{ext}")
-            if id_agua_drive:
-                nome_agua_final = f"{codigo_mes} - água{ext}"
-                break
-                
-        with col_down_2:
-            if id_agua_drive:
-                conteudo_agua = baixar_arquivo_do_drive_para_download(id_agua_drive)
-                st.download_button(
-                    label="📥 Fatura Água",
-                    data=conteudo_agua,
-                    file_name=nome_agua_final,
-                    mime="application/octet-stream"
-                )
-            else:
-                st.info("ℹ️ Água ausente.")
+        col_down_1, col_down_2 = st.
