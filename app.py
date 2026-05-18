@@ -110,18 +110,22 @@ st.markdown(f"""
     .label-nazare {{ color: #21100B !important; font-size: 14px; font-weight: bold; margin-bottom: 5px; text-shadow: 0px 0px 4px rgba(255, 255, 255, 0.8); }}
     .val-nazare {{ color: #000000 !important; font-size: 22px; font-weight: bold; text-shadow: 0px 0px 5px rgba(255, 255, 255, 0.9); }}
     
-    /* ESCONDER ELEMENTOS DO STREAMLIT COMMUNITY CLOUD */
+    /* REMOVE TOOLBAR & ELEMENTS DO STREAMLIT COMMUNITY CLOUD */
+    [data-testid="stToolbar"] {{ display: none !important; }}
     #MainMenu {{ visibility: hidden; }}
     header {{ visibility: hidden; }}
     footer {{ visibility: hidden; }}
-    [data-testid="stToolbar"] {{ display: none; }}
     [data-testid="stDecoration"] {{ display: none; }}
-    [data-testid="stStatusWidget"] {{ display: none; }}
-    button[kind="header"] {{ display: none; }}
     
-    /* BOTÕES FLUTUANTES */
+    /* REMOVE BOTÕES FLUTUANTES & STATUS */
+    [data-testid="stStatusWidget"] {{ display: none !important; }}
+    button[kind="header"] {{ display: none !important; }}
     .st-emotion-cache-1dp5vir {{ display: none !important; }}
     .st-emotion-cache-zq5wmm {{ display: none !important; }}
+    
+    /* REMOVE SHARE/FORK & PROFILE CARD (IFRAME) */
+    .stAppDeployButton {{ display: none !important; }}
+    iframe {{ display: none !important; }}
     </style>
 """, unsafe_allow_html=True)
 
