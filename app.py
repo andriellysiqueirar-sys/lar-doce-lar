@@ -405,4 +405,44 @@ else:
         """, unsafe_allow_html=True)
 
         st.markdown("<h4 style='text-align: center;'>📂 Baixar Faturas Originais</h4>", unsafe_allow_html=True)
-        col_down_1, col_down_2 = st.
+        col_down_1, col_down_2 = st.columns(2)
+        
+        # Busca Dinâmica de Luz no Drive
+        id_luz_drive = None
+        for ext in ['.pdf', '.jpg', '.jpeg', '.png']:
+            id_luz_drive = buscar_arquivo_no_drive(f"{codigo_mes} - luz{ext}")
+            if id_luz_drive:
+                nome_luz_final = f"{codigo_mes} - luz{ext}"
+                break
+        
+        with col_down_1:
+            if id_luz_drive:
+                conteudo_luz = baixar_arquivo_do_drive_para_download(id_luz_drive)
+                st.download_button(
+                    label="📥 Fatura Luz",
+                    data=conteudo_luz,
+                    file_name=nome_luz_final,
+                    mime="application/octet-stream"
+                )
+            else:
+                st.info("ℹ️ Luz ausente.")
+                
+        # Busca Dinâmica de Água no Drive
+        id_agua_drive = None
+        for ext in ['.pdf', '.jpg', '.jpeg', '.png']:
+            id_agua_drive = buscar_arquivo_no_drive(f"{codigo_mes} - água{ext}")
+            if id_agua_drive:
+                nome_agua_final = f"{codigo_mes} - água{ext}"
+                break
+                
+        with col_down_2:
+            if id_agua_drive:
+                conteudo_agua = baixar_arquivo_do_drive_para_download(id_agua_drive)
+                st.download_button(
+                    label="📥 Fatura Água",
+                    data=conteudo_agua,
+                    file_name=nome_agua_final,
+                    mime="application/octet-stream"
+                )
+            else:
+                st.info("ℹ️ Água ausente.")
