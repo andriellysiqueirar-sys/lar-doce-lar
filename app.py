@@ -107,6 +107,7 @@ st.markdown(f"""
     .item-nazare {{ flex: 1; min-width: 120px; text-align: center; }}
     .label-nazare {{ color: #21100B !important; font-size: 14px; font-weight: bold; margin-bottom: 5px; text-shadow: 0px 0px 4px rgba(255, 255, 255, 0.8); }}
     .val-nazare {{ color: #000000 !important; font-size: 22px; font-weight: bold; text-shadow: 0px 0px 5px rgba(255, 255, 255, 0.9); }}
+<<<<<<< HEAD
     .erro-grande {{ text-align: center; color: #C62828; font-size: 14px; font-weight: bold; padding: 10px; background-color: #FFEBEE; border-radius: 8px; border: 1px solid #FFCDD2; margin-top: 5px; }}
     .erro-grande span {{ font-size: 32px; display: block; margin-bottom: 2px; }}
 
@@ -122,6 +123,25 @@ st.markdown(f"""
     .stAppDeployButton {{ display: none !important; }}
     [data-testid="stCloudViewerConnectionStatus"] {{ display: none !important; }}
     button[kind="header"] {{ display: none !important; }}
+=======
+    
+    /* REMOVE TOOLBAR & ELEMENTS DO STREAMLIT COMMUNITY CLOUD */
+    [data-testid="stToolbar"] {{ display: none !important; }}
+    #MainMenu {{ visibility: hidden; }}
+    header {{ visibility: hidden; }}
+    footer {{ visibility: hidden; }}
+    [data-testid="stDecoration"] {{ display: none; }}
+    
+    /* REMOVE BOTÕES FLUTUANTES & STATUS */
+    [data-testid="stStatusWidget"] {{ display: none !important; }}
+    button[kind="header"] {{ display: none !important; }}
+    .st-emotion-cache-1dp5vir {{ display: none !important; }}
+    .st-emotion-cache-zq5wmm {{ display: none !important; }}
+    
+    /* REMOVE SHARE/FORK & PROFILE CARD (IFRAME) */
+    .stAppDeployButton {{ display: none !important; }}
+    iframe {{ display: none !important; }}
+>>>>>>> 74c77e8c55978c03c8cb3b880a0f9939731f5ff6
     </style>
 """, unsafe_allow_html=True)
 
@@ -136,13 +156,17 @@ def buscar_arquivo_no_drive(nome_arquivo):
         return arquivos[0]['id']
     return None
 
-def salvar_historico_completo_drive(prefixo, val_luz, total_kwh, leitura_ant, leitura_at, val_agua):
+def salvar_historico_completo_drive(prefixo, val_luz, total_kwh, leitura_ant, lecture_at, val_agua):
     nome_txt = f"{prefixo} - valores.txt"
-    conteudo = f"{val_luz}\n{total_kwh}\n{leitura_ant}\n{leitura_at}\n{val_agua}\n"
+    conteudo = f"{val_luz}\n{total_kwh}\n{leitura_ant}\n{lecture_at}\n{val_agua}\n"
     
     file_id = buscar_arquivo_no_drive(nome_txt)
     arquivo_memoria = io.BytesIO(conteudo.encode('utf-8'))
+<<<<<<< HEAD
     media = MediaIoBaseUpload(arquivo_memoria, mimetype='text/plain', resumable=False)
+=======
+    media = MediaIoBaseUpload(arquivo_memoria, mimetype='text/plain', resumable=True)
+>>>>>>> 74c77e8c55978c03c8cb3b880a0f9939731f5ff6
     
     if file_id:
         drive_service.files().update(fileId=file_id, media_body=media).execute()
@@ -175,7 +199,11 @@ def upload_documento_drive(arquivo_st, nome_final):
     """Faz o upload de qualquer documento para o Drive limpando duplicatas antigas"""
     file_id = buscar_arquivo_no_drive(nome_final)
     arquivo_memoria = io.BytesIO(arquivo_st.getvalue())
+<<<<<<< HEAD
     media = MediaIoBaseUpload(arquivo_memoria, mimetype=arquivo_st.type, resumable=False)
+=======
+    media = MediaIoBaseUpload(arquivo_memoria, mimetype=arquivo_st.type, resumable=True)
+>>>>>>> 74c77e8c55978c03c8cb3b880a0f9939731f5ff6
     
     if file_id:
         drive_service.files().update(fileId=file_id, media_body=media).execute()
@@ -186,12 +214,16 @@ def upload_documento_drive(arquivo_st, nome_final):
 def baixar_arquivo_do_drive_para_download(file_id):
     buffer = io.BytesIO()
     requisicao = drive_service.files().get_media(fileId=file_id)
+<<<<<<< HEAD
     downloader = MediaIoBaseDownload(buffer, requisicao)
     done = False
     while not done:
         _, done = downloader.next_chunk()
     buffer.seek(0)
     return buffer.read()
+=======
+    return requisicao.execute()
+>>>>>>> 74c77e8c55978c03c8cb3b880a0f9939731f5ff6
 
 def buscar_leitura_atual_anterior(mes_selecionado):
     try:
@@ -200,9 +232,15 @@ def buscar_leitura_atual_anterior(mes_selecionado):
             mes_anterior = LISTA_MESES[idx - 1]
             prefixo_ant = MAPA_MESES[mes_anterior]
             dados = carregar_historico_completo_drive(prefixo_ant)
+<<<<<<< HEAD
             return dados[3]
     except Exception:
         pass
+=======
+            return dados[3] 
+    except Exception as e:
+        st.error(f"Erro ao buscar leitura anterior: {e}")
+>>>>>>> 74c77e8c55978c03c8cb3b880a0f9939731f5ff6
     return 0.0
 
 def listar_todos_arquivos_drive():
@@ -211,8 +249,13 @@ def listar_todos_arquivos_drive():
         resultados = drive_service.files().list(q=query, fields="files(name)").execute()
         arquivos = resultados.get('files', [])
         return [arq['name'] for arq in arquivos]
+<<<<<<< HEAD
     except Exception:
         pass
+=======
+    except Exception as e:
+        st.error(f"Erro listando Drive: {e}")
+>>>>>>> 74c77e8c55978c03c8cb3b880a0f9939731f5ff6
     return []
 
 # ==========================================
@@ -265,7 +308,11 @@ else:
             mes_ano = st.selectbox("Selecione o Mês/Ano de referência:", LISTA_MESES, index=4)
             prefixo_data = MAPA_MESES[mes_ano]
             
+<<<<<<< HEAD
             luz_fatura, kwh_fatura, medidor_ant, leitura_at, agua_fatura = carregar_historico_completo_drive(prefixo_data)
+=======
+            luz_fatura, kwh_fatura, medidor_ant, lecture_at, agua_fatura = carregar_historico_completo_drive(prefixo_data)
+>>>>>>> 74c77e8c55978c03c8cb3b880a0f9939731f5ff6
             
             if medidor_ant == 0.0:
                 medidor_ant = buscar_leitura_atual_anterior(mes_ano)
@@ -282,7 +329,19 @@ else:
             with col_m1:
                 leitura_ant_input = st.number_input("Leitura Anterior do Medidor Interno", min_value=0.0, step=0.1, value=medidor_ant)
             with col_m2:
+<<<<<<< HEAD
                 leitura_at_input = st.number_input("Leitura Atual do Medidor Interno", min_value=0.0, step=0.1, value=leitura_at)
+=======
+                lecture_at = st.number_input("Leitura Atual do Medidor Interno", min_value=0.0, step=0.1, value=lecture_at)
+            
+            if total_kwh > 0:
+                valor_por_kwh = val_luz / total_kwh
+                consumo_dry_rafa = lecture_at - leitura_ant if lecture_at >= leitura_ant else 0.0
+                custo_dry_rafa = consumo_dry_rafa * valor_por_kwh
+                custo_vicente = val_luz - custo_dry_rafa
+                
+                st.info(f"💡 **Cálculo Prévio:** Custo por kW/h: R$ {valor_por_kwh:.4f} | Seu Consumo (Dry/Rafa): {consumo_dry_rafa:.1f} kW/h (R$ {custo_dry_rafa:.2f}) | Parte do Vicente: R$ {custo_vicente:.2f}")
+>>>>>>> 74c77e8c55978c03c8cb3b880a0f9939731f5ff6
             
             st.markdown("#### 💧 Fatura de Água SANEPAR")
             val_agua = st.number_input("Valor Total da Conta de Água (R$)", min_value=0.0, step=0.01, value=agua_fatura, key="adm_agua_tot")
@@ -295,6 +354,7 @@ else:
             with col_up2:
                 arquivo_agua = st.file_uploader("📄 Fatura da Água (Sanepar)", type=["pdf", "jpg", "jpeg", "png"], key="up_fatura_agua")
             
+<<<<<<< HEAD
             st.markdown("---")
             st.markdown("#### 🧾 Upload dos Comprovantes de Pagamento")
             col_c1, col_c2, col_c3 = st.columns(3)
@@ -326,6 +386,21 @@ else:
                         st.success(f"✅ Dados e mídias de {mes_ano} publicados com sucesso no Drive!")
                     except Exception as e:
                         st.error(f"❌ Erro ao salvar: {e}")
+=======
+            if st.button("Salvar e Publicar no Sistema"):
+                with st.spinner("Salvando diretamente no Google Drive..."):
+                    salvar_historico_completo_drive(prefixo_data, val_luz, total_kwh, leitura_ant, lecture_at, val_agua)
+                    
+                    if arquivo_luz is not None:
+                        extensao = os.path.splitext(arquivo_luz.name)[1].lower()
+                        upload_documento_drive(arquivo_luz, f"{prefixo_data} - luz{extensao}")
+                    
+                    if arquivo_agua is not None:
+                        extensao = os.path.splitext(arquivo_agua.name)[1].lower()
+                        upload_documento_drive(arquivo_agua, f"{prefixo_data} - água{extensao}")
+                    
+                    st.success(f"Dados e fórmulas de {mes_ano} publicados no Google Drive com sucesso!")
+>>>>>>> 74c77e8c55978c03c8cb3b880a0f9939731f5ff6
 
         with aba_historio:
             with st.spinner("Buscando lista de arquivos no Drive..."):
@@ -349,11 +424,11 @@ else:
         codigo_mes = MAPA_MESES[mes_selecionado]
         
         with st.spinner("Carregando valores do Drive..."):
-            val_luz, total_kwh, leitura_ant, leitura_at, val_agua = carregar_historico_completo_drive(codigo_mes)
+            val_luz, total_kwh, leitura_ant, lecture_at, val_agua = carregar_historico_completo_drive(codigo_mes)
         
-        if total_kwh > 0 and leitura_at >= leitura_ant:
+        if total_kwh > 0 and lecture_at >= leitura_ant:
             valor_por_kwh = val_luz / total_kwh
-            consumo_dry_rafa = leitura_at - leitura_ant
+            consumo_dry_rafa = lecture_at - leitura_ant
             custo_dry_rafa = consumo_dry_rafa * valor_por_kwh
             
             if st.session_state.perfil == "marido":
@@ -436,6 +511,7 @@ else:
                 conteudo_agua = baixar_arquivo_do_drive_para_download(id_agua_drive)
                 st.download_button(label="📥 Fatura Água", data=conteudo_agua, file_name=nome_agua_final, mime="application/octet-stream")
             else:
+<<<<<<< HEAD
                 st.markdown('<div class="erro-grande"><span>❌</span>Fatura de Água<br>não disponível</div>', unsafe_allow_html=True)
 
         # SEÇÃO 2: COMPROVANTES
@@ -484,3 +560,6 @@ else:
                 st.download_button(label="🧾 Comp. Net", data=baixar_arquivo_do_drive_para_download(id_c_net), file_name=nome_c_net)
             else:
                 st.markdown('<div class="erro-grande"><span>❌</span>Comp. Internet<br>ausente</div>', unsafe_allow_html=True)
+=======
+                st.info("ℹ️ Água ausente.")
+>>>>>>> 74c77e8c55978c03c8cb3b880a0f9939731f5ff6
