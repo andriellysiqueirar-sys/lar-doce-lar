@@ -512,13 +512,45 @@ else:
             </div>
         """, unsafe_allow_html=True)
 
-        # QR CODE DINÂMICO
+        # ==========================================
+        # QR CODE + PIX COPIA E COLA
+        # ==========================================
+
         if total_a_pagar > 0:
-            st.markdown("<h4 style='text-align:center;'>📱 QR Code PIX — Escaneie para Pagar</h4>", unsafe_allow_html=True)
+
+            st.markdown(
+                "<h4 style='text-align:center;'>📱 QR Code PIX — Escaneie para Pagar</h4>",
+                unsafe_allow_html=True
+            )
+
+            # Gera QR Code
             qr_bytes = gerar_qrcode_imagem(total_a_pagar)
+
             col_qr1, col_qr2, col_qr3 = st.columns([1, 2, 1])
+
             with col_qr2:
-                st.image(qr_bytes, caption=f"R$ {total_a_pagar:.2f} → {PIX_CHAVE}", use_container_width=True)
+
+                st.image(
+                    qr_bytes,
+                    caption=f"R$ {total_a_pagar:.2f} → {PIX_CHAVE}",
+                    use_container_width=True
+                )
+
+                # PIX Copia e Cola
+                payload_pix = gerar_payload_pix(
+                    PIX_CHAVE,
+                    PIX_NOME,
+                    PIX_CIDADE,
+                    total_a_pagar,
+                    PIX_DESCRICAO
+                )
+
+                st.text_area(
+                    "📋 PIX Copia e Cola",
+                    value=payload_pix,
+                    height=120
+                )
+
         else:
             st.info("QR Code disponível após o Admin lançar os valores do mês.")
 
