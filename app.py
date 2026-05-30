@@ -2,6 +2,8 @@ import streamlit as st
 import os
 import base64
 import json
+import qrcode
+import io as io_module
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload, MediaIoBaseDownload
@@ -30,11 +32,11 @@ else:
     st.stop()
 
 # IDs
-PASTA_DRIVE_ID = "1uM5fKwOJyo418E-Te3EpyPuLMvGpVdQH"
-PLANILHA_ID = "1la4BUnm9du32LDk0m1FcQay1HxFaYjJfCYbrDLH9rg4"
-ABA_DADOS = "Planilha"
+PASTA_DRIVE_ID  = "1uM5fKwOJyo418E-Te3EpyPuLMvGpVdQH"
+PLANILHA_ID     = "1la4BUnm9du32LDk0m1FcQay1HxFaYjJfCYbrDLH9rg4"
+ABA_DADOS       = "Planilha"
 
-NOME_IMAGEM = "lar_doce_lar.png"
+NOME_IMAGEM  = "lar_doce_lar.png"
 IMAGEM_NAZARE = "Nazare.jpg"
 
 LISTA_MESES = [
@@ -49,116 +51,171 @@ MAPA_MESES = {
     "Outubro/2026": "2026.10", "Novembro/2026": "2026.11", "Dezembro/2026": "2026.12"
 }
 
-INTERNET_FIXO = 55.00
+INTERNET_FIXO   = 55.00
+PIX_CHAVE       = "08974285959"
+PIX_NOME        = "Andrielly Cristina"   # max 25 chars
+PIX_CIDADE      = "Araucaria"
+PIX_DESCRICAO   = "Lar doce Lar"
 
 USUARIOS = {
-    "Admin": {"senha": "2311", "perfil": "admin"},
+    "Admin":   {"senha": "2311", "perfil": "admin"},
     "Vicente": {"senha": "1103", "perfil": "familia"},
     "Amoreco": {"senha": "1812", "perfil": "marido"}
 }
 
 if 'logado' not in st.session_state:
-    st.session_state.logado = False
-    st.session_state.perfil = None
+    st.session_state.logado      = False
+    st.session_state.perfil      = None
     st.session_state.usuario_atual = None
 
+# --- IMAGENS BASE64 ---
 def obter_imagem_base64(caminho_img):
     if os.path.exists(caminho_img):
         with open(caminho_img, "rb") as f:
-            data = f.read()
-        return base64.b64encode(data).decode()
+            return base64.b64encode(f.read()).decode()
     return None
 
 img_familia_b64 = obter_imagem_base64(NOME_IMAGEM)
-img_nazare_b64 = obter_imagem_base64(IMAGEM_NAZARE)
+img_nazare_b64  = obter_imagem_base64(IMAGEM_NAZARE)
 
 if img_familia_b64:
     background_style = f"""
-        background: linear-gradient(rgba(232, 138, 122, 0.83), rgba(232, 138, 122, 0.83)), 
+        background: linear-gradient(rgba(232,138,122,0.83),rgba(232,138,122,0.83)),
                     url("data:image/png;base64,{img_familia_b64}");
-        background-size: 100% auto;
-        background-position: top center;
-        background-repeat: no-repeat;
-        background-attachment: fixed;
-    """
+        background-size: 100% auto; background-position: top center;
+        background-repeat: no-repeat; background-attachment: fixed;"""
 else:
-    background_style = "background-color: #E88A7A;"
+    background_style = "background-color:#E88A7A;"
 
 if img_nazare_b64:
     nazare_style = f"""
         background-image: url("data:image/jpeg;base64,{img_nazare_b64}");
-        background-size: cover;
-        background-position: center;
-        background-blend-mode: overlay;
-        background-color: rgba(255, 255, 255, 0.55);
-    """
+        background-size: cover; background-position: center;
+        background-blend-mode: overlay; background-color: rgba(255,255,255,0.55);"""
 else:
-    nazare_style = "background-color: #FDF5F3;"
+    nazare_style = "background-color:#FDF5F3;"
 
 st.markdown(f"""
     <style>
-    .stApp {{ {background_style} color: #2F1F1D; }}
-    .stTextInput > div > div > input, .stSelectbox > div > div, .stNumberInput > div > div > input {{
-        background-color: #FCEBE8 !important; color: #2F1F1D !important; border: 1px solid #D16B5B !important; border-radius: 8px !important;
-    }}
-    label, .stMarkdown, p {{ color: #3E2723 !important; font-weight: 500; }}
+    .stApp {{ {background_style} color:#2F1F1D; }}
+    .stTextInput>div>div>input,.stSelectbox>div>div,.stNumberInput>div>div>input {{
+        background-color:#FCEBE8!important;color:#2F1F1D!important;
+        border:1px solid #D16B5B!important;border-radius:8px!important; }}
+    label,.stMarkdown,p {{ color:#3E2723!important;font-weight:500; }}
     [data-testid="stForm"] {{
-        background-color: #FDF5F3 !important; border: 2px solid #D16B5B !important; border-radius: 12px !important; padding: 20px !important; box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1); max-width: 200px !important; margin: 0 auto !important;
-    }}
-    [data-testid="stForm"] div.stButton > button {{ background-color: #3E2723 !important; color: #FCEBE8 !important; border-radius: 8px !important; border: none !important; font-weight: bold; width: 100%; }}
-    .botao-sair button {{ background-color: #3E2723 !important; color: #FCEBE8 !important; border-radius: 8px !important; border: 2px solid #FCEBE8 !important; font-weight: bold !important; width: 100%; }}
-    div.stDownloadButton > button {{ background-color: #2E7D32 !important; color: #FFFFFF !important; border-radius: 8px !important; border: none !important; width: 100%; font-weight: bold; }}
-    .destaque-box {{ background-color: #FDF5F3; padding: 22px; border-radius: 12px; box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1); border: 2px solid #D16B5B; margin-bottom: 20px; }}
-    .caixa-nazare-container {{ {nazare_style} padding: 22px; border-radius: 12px; box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1); border: 2px solid #D16B5B; margin-bottom: 20px; }}
-    .grid-nazare {{ display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-top: 15px; }}
-    .item-nazare {{ flex: 1; min-width: 120px; text-align: center; }}
-    .label-nazare {{ color: #21100B !important; font-size: 14px; font-weight: bold; margin-bottom: 5px; text-shadow: 0px 0px 4px rgba(255, 255, 255, 0.8); }}
-    .val-nazare {{ color: #000000 !important; font-size: 22px; font-weight: bold; text-shadow: 0px 0px 5px rgba(255, 255, 255, 0.9); }}
-    .erro-grande {{ text-align: center; color: #C62828; font-size: 14px; font-weight: bold; padding: 10px; background-color: #FFEBEE; border-radius: 8px; border: 1px solid #FFCDD2; margin-top: 5px; }}
-    .erro-grande span {{ font-size: 32px; display: block; margin-bottom: 2px; }}
-    [data-testid="stToolbar"] {{ display: none !important; }}
-    #MainMenu {{ visibility: hidden; }}
-    header {{ visibility: hidden; }}
-    footer {{ visibility: hidden; }}
-    [data-testid="stDecoration"] {{ display: none; }}
-    [data-testid="stStatusWidget"] {{ display: none !important; }}
-    button[kind="header"] {{ display: none !important; }}
-    .stAppDeployButton {{ display: none !important; }}
-    iframe {{ display: none !important; }}
+        background-color:#FDF5F3!important;border:2px solid #D16B5B!important;
+        border-radius:12px!important;padding:20px!important;
+        box-shadow:0px 4px 15px rgba(0,0,0,0.1);max-width:200px!important;margin:0 auto!important; }}
+    [data-testid="stForm"] div.stButton>button {{
+        background-color:#3E2723!important;color:#FCEBE8!important;
+        border-radius:8px!important;border:none!important;font-weight:bold;width:100%; }}
+    .botao-sair button {{
+        background-color:#3E2723!important;color:#FCEBE8!important;
+        border-radius:8px!important;border:2px solid #FCEBE8!important;font-weight:bold!important;width:100%; }}
+    div.stDownloadButton>button {{
+        background-color:#2E7D32!important;color:#FFFFFF!important;
+        border-radius:8px!important;border:none!important;width:100%;font-weight:bold; }}
+    .destaque-box {{
+        background-color:#FDF5F3;padding:22px;border-radius:12px;
+        box-shadow:0px 4px 15px rgba(0,0,0,0.1);border:2px solid #D16B5B;margin-bottom:20px; }}
+    .caixa-nazare-container {{
+        {nazare_style} padding:22px;border-radius:12px;
+        box-shadow:0px 4px 15px rgba(0,0,0,0.1);border:2px solid #D16B5B;margin-bottom:20px; }}
+    .grid-nazare {{ display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-top:15px; }}
+    .item-nazare {{ flex:1;min-width:120px;text-align:center; }}
+    .label-nazare {{ color:#21100B!important;font-size:14px;font-weight:bold;margin-bottom:5px;text-shadow:0px 0px 4px rgba(255,255,255,0.8); }}
+    .val-nazare {{ color:#000000!important;font-size:22px;font-weight:bold;text-shadow:0px 0px 5px rgba(255,255,255,0.9); }}
+    .erro-grande {{ text-align:center;color:#C62828;font-size:14px;font-weight:bold;padding:10px;
+        background-color:#FFEBEE;border-radius:8px;border:1px solid #FFCDD2;margin-top:5px; }}
+    .erro-grande span {{ font-size:32px;display:block;margin-bottom:2px; }}
+    [data-testid="stToolbar"] {{ display:none!important; }}
+    #MainMenu {{ visibility:hidden; }}
+    header {{ visibility:hidden; }}
+    footer {{ visibility:hidden; }}
+    [data-testid="stDecoration"] {{ display:none; }}
+    [data-testid="stStatusWidget"] {{ display:none!important; }}
+    button[kind="header"] {{ display:none!important; }}
+    .stAppDeployButton {{ display:none!important; }}
+    iframe {{ display:none!important; }}
     </style>
 """, unsafe_allow_html=True)
+
+# ==========================================
+# GERADOR DE QR CODE PIX (EMV)
+# ==========================================
+
+def _crc16(data: str) -> str:
+    crc = 0xFFFF
+    for char in data:
+        crc ^= ord(char) << 8
+        for _ in range(8):
+            crc = (crc << 1) ^ 0x1021 if crc & 0x8000 else crc << 1
+            crc &= 0xFFFF
+    return format(crc, '04X')
+
+def _emv_field(id_: str, value: str) -> str:
+    return f"{id_}{len(value):02d}{value}"
+
+def gerar_payload_pix(chave: str, nome: str, cidade: str, valor: float, descricao: str) -> str:
+    valor_str   = f"{valor:.2f}"
+    gui         = _emv_field("00", "br.gov.bcb.pix")
+    chave_field = _emv_field("01", chave)
+    if descricao:
+        desc_field = _emv_field("02", descricao[:72])
+        merchant_account = _emv_field("26", gui + chave_field + desc_field)
+    else:
+        merchant_account = _emv_field("26", gui + chave_field)
+
+    payload = (
+        _emv_field("00", "01")           # Payload format indicator
+        + merchant_account               # Merchant account info
+        + _emv_field("52", "0000")       # MCC
+        + _emv_field("53", "986")        # Currency BRL
+        + _emv_field("54", valor_str)    # Transaction amount
+        + _emv_field("58", "BR")         # Country
+        + _emv_field("59", nome[:25])    # Merchant name
+        + _emv_field("60", cidade[:15])  # Merchant city
+        + _emv_field("62", _emv_field("05", "***"))  # Additional data
+        + "6304"                         # CRC placeholder
+    )
+    return payload + _crc16(payload)
+
+def gerar_qrcode_imagem(valor: float) -> bytes:
+    payload = gerar_payload_pix(PIX_CHAVE, PIX_NOME, PIX_CIDADE, valor, PIX_DESCRICAO)
+    qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=6, border=2)
+    qr.add_data(payload)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="#3E2723", back_color="white")
+    buf = io_module.BytesIO()
+    img.save(buf, format="PNG")
+    return buf.getvalue()
 
 # ==========================================
 # FUNÇÕES GOOGLE SHEETS
 # ==========================================
 
+CABECALHO = [
+    "Mes_Ano", "Valor_Luz", "Total_kWh", "Leitura_Ant", "Leitura_At",
+    "Valor_Agua", "Internet_Fixo",
+    "Parte_Amoreco_Luz", "Parte_Vicente_Luz",
+    "Parte_Amoreco_Agua", "Parte_Vicente_Agua",
+    "Parte_Amoreco_Internet", "Parte_Vicente_Internet",
+    "Total_Amoreco", "Total_Vicente"
+]
+
 def garantir_cabecalho_sheets():
-    cabecalho = [[
-        "Mes_Ano", "Valor_Luz", "Total_kWh", "Leitura_Ant", "Leitura_At",
-        "Valor_Agua", "Parte_Amoreco_Luz", "Parte_Vicente_Luz",
-        "Parte_Amoreco_Agua", "Parte_Vicente_Agua",
-        "Total_Amoreco", "Total_Vicente"
-    ]]
     resultado = sheets_service.spreadsheets().values().get(
-        spreadsheetId=PLANILHA_ID,
-        range=f"{ABA_DADOS}!A1:L1"
-    ).execute()
+        spreadsheetId=PLANILHA_ID, range=f"{ABA_DADOS}!A1:O1").execute()
     valores = resultado.get('values', [])
     if not valores or valores[0][0] != "Mes_Ano":
         sheets_service.spreadsheets().values().update(
-            spreadsheetId=PLANILHA_ID,
-            range=f"{ABA_DADOS}!A1",
-            valueInputOption="RAW",
-            body={"values": cabecalho}
-        ).execute()
+            spreadsheetId=PLANILHA_ID, range=f"{ABA_DADOS}!A1",
+            valueInputOption="RAW", body={"values": [CABECALHO]}).execute()
 
 def buscar_linha_mes(prefixo):
     resultado = sheets_service.spreadsheets().values().get(
-        spreadsheetId=PLANILHA_ID,
-        range=f"{ABA_DADOS}!A:A"
-    ).execute()
-    valores = resultado.get('values', [])
-    for i, linha in enumerate(valores):
+        spreadsheetId=PLANILHA_ID, range=f"{ABA_DADOS}!A:A").execute()
+    for i, linha in enumerate(resultado.get('values', [])):
         if linha and linha[0] == prefixo:
             return i + 1
     return None
@@ -167,69 +224,64 @@ def salvar_dados_sheets(prefixo, val_luz, total_kwh, leitura_ant, leitura_at, va
     garantir_cabecalho_sheets()
 
     if total_kwh > 0:
-        preco_kwh = val_luz / total_kwh
-        consumo_amoreco = leitura_at - leitura_ant
+        preco_kwh         = val_luz / total_kwh
+        consumo_amoreco   = leitura_at - leitura_ant
         parte_amoreco_luz = round(preco_kwh * consumo_amoreco, 2)
     else:
         parte_amoreco_luz = 0.0
 
-    parte_vicente_luz  = round(val_luz - parte_amoreco_luz, 2)
-    parte_amoreco_agua = round(val_agua / 2, 2)
-    parte_vicente_agua = round(val_agua / 2, 2)
-    total_amoreco      = round(parte_amoreco_luz + parte_amoreco_agua + INTERNET_FIXO, 2)
-    total_vicente      = round(parte_vicente_luz + parte_vicente_agua + INTERNET_FIXO, 2)
+    parte_vicente_luz       = round(val_luz - parte_amoreco_luz, 2)
+    parte_amoreco_agua      = round(val_agua / 2, 2)
+    parte_vicente_agua      = round(val_agua / 2, 2)
+    parte_amoreco_internet  = INTERNET_FIXO
+    parte_vicente_internet  = INTERNET_FIXO
+    total_amoreco           = round(parte_amoreco_luz + parte_amoreco_agua + INTERNET_FIXO, 2)
+    total_vicente           = round(parte_vicente_luz + parte_vicente_agua + INTERNET_FIXO, 2)
 
     nova_linha = [[
-        prefixo, val_luz, total_kwh, leitura_ant, leitura_at,
-        val_agua, parte_amoreco_luz, parte_vicente_luz,
+        prefixo, val_luz, total_kwh, leitura_ant, leitura_at, val_agua, INTERNET_FIXO,
+        parte_amoreco_luz, parte_vicente_luz,
         parte_amoreco_agua, parte_vicente_agua,
+        parte_amoreco_internet, parte_vicente_internet,
         total_amoreco, total_vicente
     ]]
 
     linha_existente = buscar_linha_mes(prefixo)
-
     if linha_existente:
         sheets_service.spreadsheets().values().update(
             spreadsheetId=PLANILHA_ID,
-            range=f"{ABA_DADOS}!A{linha_existente}:L{linha_existente}",
-            valueInputOption="RAW",
-            body={"values": nova_linha}
-        ).execute()
+            range=f"{ABA_DADOS}!A{linha_existente}:O{linha_existente}",
+            valueInputOption="RAW", body={"values": nova_linha}).execute()
     else:
         sheets_service.spreadsheets().values().append(
-            spreadsheetId=PLANILHA_ID,
-            range=f"{ABA_DADOS}!A:L",
-            valueInputOption="RAW",
-            insertDataOption="INSERT_ROWS",
-            body={"values": nova_linha}
-        ).execute()
+            spreadsheetId=PLANILHA_ID, range=f"{ABA_DADOS}!A:O",
+            valueInputOption="RAW", insertDataOption="INSERT_ROWS",
+            body={"values": nova_linha}).execute()
 
 def carregar_dados_sheets(prefixo):
     try:
         resultado = sheets_service.spreadsheets().values().get(
-            spreadsheetId=PLANILHA_ID,
-            range=f"{ABA_DADOS}!A:L"
-        ).execute()
-        linhas = resultado.get('values', [])
-        for linha in linhas:
+            spreadsheetId=PLANILHA_ID, range=f"{ABA_DADOS}!A:O").execute()
+        for linha in resultado.get('values', []):
             if linha and linha[0] == prefixo:
                 def sf(v):
-                    try:
-                        return float(str(v).replace(',', '.'))
-                    except:
-                        return 0.0
+                    try: return float(str(v).replace(',', '.'))
+                    except: return 0.0
                 return {
-                    "val_luz":           sf(linha[1])  if len(linha) > 1  else 0.0,
-                    "total_kwh":         sf(linha[2])  if len(linha) > 2  else 0.0,
-                    "leitura_ant":       sf(linha[3])  if len(linha) > 3  else 0.0,
-                    "leitura_at":        sf(linha[4])  if len(linha) > 4  else 0.0,
-                    "val_agua":          sf(linha[5])  if len(linha) > 5  else 0.0,
-                    "parte_amoreco_luz": sf(linha[6])  if len(linha) > 6  else 0.0,
-                    "parte_vicente_luz": sf(linha[7])  if len(linha) > 7  else 0.0,
-                    "parte_amoreco_agua":sf(linha[8])  if len(linha) > 8  else 0.0,
-                    "parte_vicente_agua":sf(linha[9])  if len(linha) > 9  else 0.0,
-                    "total_amoreco":     sf(linha[10]) if len(linha) > 10 else 0.0,
-                    "total_vicente":     sf(linha[11]) if len(linha) > 11 else 0.0,
+                    "val_luz":                  sf(linha[1])  if len(linha) > 1  else 0.0,
+                    "total_kwh":                sf(linha[2])  if len(linha) > 2  else 0.0,
+                    "leitura_ant":              sf(linha[3])  if len(linha) > 3  else 0.0,
+                    "leitura_at":               sf(linha[4])  if len(linha) > 4  else 0.0,
+                    "val_agua":                 sf(linha[5])  if len(linha) > 5  else 0.0,
+                    "internet_fixo":            sf(linha[6])  if len(linha) > 6  else INTERNET_FIXO,
+                    "parte_amoreco_luz":        sf(linha[7])  if len(linha) > 7  else 0.0,
+                    "parte_vicente_luz":        sf(linha[8])  if len(linha) > 8  else 0.0,
+                    "parte_amoreco_agua":       sf(linha[9])  if len(linha) > 9  else 0.0,
+                    "parte_vicente_agua":       sf(linha[10]) if len(linha) > 10 else 0.0,
+                    "parte_amoreco_internet":   sf(linha[11]) if len(linha) > 11 else INTERNET_FIXO,
+                    "parte_vicente_internet":   sf(linha[12]) if len(linha) > 12 else INTERNET_FIXO,
+                    "total_amoreco":            sf(linha[13]) if len(linha) > 13 else 0.0,
+                    "total_vicente":            sf(linha[14]) if len(linha) > 14 else 0.0,
                 }
     except Exception as e:
         st.warning(f"Erro ao carregar planilha: {e}")
@@ -239,9 +291,7 @@ def buscar_leitura_anterior_sheets(mes_selecionado):
     try:
         idx = LISTA_MESES.index(mes_selecionado)
         if idx > 0:
-            mes_anterior = LISTA_MESES[idx - 1]
-            prefixo_ant = MAPA_MESES[mes_anterior]
-            dados = carregar_dados_sheets(prefixo_ant)
+            dados = carregar_dados_sheets(MAPA_MESES[LISTA_MESES[idx - 1]])
             if dados:
                 return dados["leitura_at"]
     except Exception:
@@ -253,38 +303,37 @@ def buscar_leitura_anterior_sheets(mes_selecionado):
 # ==========================================
 
 def buscar_arquivo_no_drive(nome_arquivo):
-    query = f"'{PASTA_DRIVE_ID}' in parents and name = '{nome_arquivo}' and trashed = false"
-    resultados = drive_service.files().list(q=query, fields="files(id, name)").execute()
-    arquivos = resultados.get('files', [])
-    if arquivos:
-        return arquivos[0]['id']
-    return None
+    query = f"'{PASTA_DRIVE_ID}' in parents and name='{nome_arquivo}' and trashed=false"
+    res = drive_service.files().list(q=query, fields="files(id)").execute()
+    arqs = res.get('files', [])
+    return arqs[0]['id'] if arqs else None
 
 def upload_documento_drive(arquivo_st, nome_final):
     file_id = buscar_arquivo_no_drive(nome_final)
-    arquivo_memoria = io.BytesIO(arquivo_st.getvalue())
-    media = MediaIoBaseUpload(arquivo_memoria, mimetype=arquivo_st.type, resumable=False)
+    mem = io.BytesIO(arquivo_st.getvalue())
+    media = MediaIoBaseUpload(mem, mimetype=arquivo_st.type, resumable=False)
     if file_id:
         drive_service.files().update(fileId=file_id, media_body=media).execute()
     else:
-        metadados = {'name': nome_final, 'parents': [PASTA_DRIVE_ID]}
-        drive_service.files().create(body=metadados, media_body=media).execute()
+        drive_service.files().create(
+            body={'name': nome_final, 'parents': [PASTA_DRIVE_ID]},
+            media_body=media).execute()
 
 def baixar_arquivo_do_drive(file_id):
-    buffer = io.BytesIO()
-    requisicao = drive_service.files().get_media(fileId=file_id)
-    downloader = MediaIoBaseDownload(buffer, requisicao)
+    buf = io.BytesIO()
+    dl = MediaIoBaseDownload(buf, drive_service.files().get_media(fileId=file_id))
     done = False
     while not done:
-        _, done = downloader.next_chunk()
-    buffer.seek(0)
-    return buffer.read()
+        _, done = dl.next_chunk()
+    buf.seek(0)
+    return buf.read()
 
 def listar_todos_arquivos_drive():
     try:
-        query = f"'{PASTA_DRIVE_ID}' in parents and trashed = false"
-        resultados = drive_service.files().list(q=query, fields="files(name)").execute()
-        return [arq['name'] for arq in resultados.get('files', [])]
+        res = drive_service.files().list(
+            q=f"'{PASTA_DRIVE_ID}' in parents and trashed=false",
+            fields="files(name)").execute()
+        return [a['name'] for a in res.get('files', [])]
     except Exception:
         return []
 
@@ -292,26 +341,24 @@ def listar_todos_arquivos_drive():
 # 1. TELA DE LOGIN
 # ==========================================
 if not st.session_state.logado:
-    st.markdown("<div style='margin-top: 130px;'></div>", unsafe_allow_html=True)
-    st.markdown("<h2 style='text-align: center; margin-top: 15px;'>🏠 Lar doce Lar</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #3E2723;'>Insira suas credenciais para acessar o portal</p>", unsafe_allow_html=True)
+    st.markdown("<div style='margin-top:130px;'></div>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align:center;margin-top:15px;'>🏠 Lar doce Lar</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align:center;color:#3E2723;'>Insira suas credenciais para acessar o portal</p>", unsafe_allow_html=True)
 
     with st.form(key="login_form"):
         usuario_input = st.text_input("Usuário")
-        senha_input = st.text_input("Senha", type="password")
-        botao_entrar = st.form_submit_button("Entrar")
-
-        if botao_entrar:
+        senha_input   = st.text_input("Senha", type="password")
+        if st.form_submit_button("Entrar"):
             if usuario_input in USUARIOS and USUARIOS[usuario_input]["senha"] == senha_input:
-                st.session_state.logado = True
-                st.session_state.perfil = USUARIOS[usuario_input]["perfil"]
+                st.session_state.logado        = True
+                st.session_state.perfil        = USUARIOS[usuario_input]["perfil"]
                 st.session_state.usuario_atual = usuario_input
                 st.rerun()
             else:
                 st.error("Usuário ou senha incorretos.")
 
 # ==========================================
-# 2. TELAS DO SISTEMA (PÓS-LOGIN)
+# 2. TELAS DO SISTEMA
 # ==========================================
 else:
     col_topo_1, col_topo_2 = st.columns([8, 2])
@@ -324,18 +371,18 @@ else:
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown("<h1 style='text-align: center; margin-top: 15px;'>🏠 Lar doce Lar</h1>", unsafe_allow_html=True)
-    st.markdown("<hr style='border: 1px solid #D16B5B;'>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align:center;margin-top:15px;'>🏠 Lar doce Lar</h1>", unsafe_allow_html=True)
+    st.markdown("<hr style='border:1px solid #D16B5B;'>", unsafe_allow_html=True)
 
     # ------------------------------------------
-    # 2.1. PAINEL ADMIN
+    # PAINEL ADMIN
     # ------------------------------------------
     if st.session_state.perfil == "admin":
         st.subheader("⚙️ Painel de Administração")
         aba_subir, aba_historico = st.tabs(["🚀 Lançar Valores e Contas", "📊 Arquivos no Drive"])
 
         with aba_subir:
-            mes_ano = st.selectbox("Selecione o Mês/Ano de referência:", LISTA_MESES, index=4)
+            mes_ano      = st.selectbox("Selecione o Mês/Ano de referência:", LISTA_MESES, index=4)
             prefixo_data = MAPA_MESES[mes_ano]
 
             with st.spinner("Carregando dados do mês..."):
@@ -357,205 +404,200 @@ else:
             st.markdown("#### ⚡ Fatura de Energia - COPEL")
             col_l1, col_l2 = st.columns(2)
             with col_l1:
-                val_luz = st.number_input("Valor Total da Fatura Copel (R$)", min_value=0.0, step=0.01, value=luz_fatura, key="adm_luz_tot")
+                val_luz   = st.number_input("Valor Total da Fatura Copel (R$)", min_value=0.0, step=0.01, value=luz_fatura,  key="adm_luz_tot")
             with col_l2:
-                total_kwh = st.number_input("Consumo Total de kW/h", min_value=0.0, step=0.1, value=kwh_fatura, key="adm_kwh_tot")
+                total_kwh = st.number_input("Consumo Total de kW/h",            min_value=0.0, step=0.1,  value=kwh_fatura,  key="adm_kwh_tot")
 
             st.markdown("#### 🔍 Medidor Interno (Dry / Rafa)")
             col_m1, col_m2 = st.columns(2)
             with col_m1:
                 leitura_ant_input = st.number_input("Leitura Anterior do Medidor Interno", min_value=0.0, step=0.1, value=medidor_ant)
             with col_m2:
-                leitura_at_input = st.number_input("Leitura Atual do Medidor Interno", min_value=0.0, step=0.1, value=leitura_at)
+                leitura_at_input  = st.number_input("Leitura Atual do Medidor Interno",    min_value=0.0, step=0.1, value=leitura_at)
 
             st.markdown("#### 💧 Fatura de Água SANEPAR")
             val_agua = st.number_input("Valor Total da Conta de Água (R$)", min_value=0.0, step=0.01, value=agua_fatura, key="adm_agua_tot")
+
+            st.markdown(f"#### 🌐 Internet — Valor fixo: **R$ {INTERNET_FIXO:.2f}** por família")
 
             st.markdown("---")
             st.markdown("#### 📂 Upload das Faturas Originais")
             col_up1, col_up2 = st.columns(2)
             with col_up1:
-                arquivo_luz = st.file_uploader("📄 Fatura da Luz (Copel)", type=["pdf", "jpg", "jpeg", "png"], key="up_fatura_luz")
+                arquivo_luz  = st.file_uploader("📄 Fatura da Luz (Copel)",    type=["pdf","jpg","jpeg","png"], key="up_fatura_luz")
             with col_up2:
-                arquivo_agua = st.file_uploader("📄 Fatura da Água (Sanepar)", type=["pdf", "jpg", "jpeg", "png"], key="up_fatura_agua")
+                arquivo_agua = st.file_uploader("📄 Fatura da Água (Sanepar)", type=["pdf","jpg","jpeg","png"], key="up_fatura_agua")
 
             st.markdown("---")
             st.markdown("#### 🧾 Upload dos Comprovantes de Pagamento")
             col_c1, col_c2, col_c3 = st.columns(3)
             with col_c1:
-                comp_luz = st.file_uploader("✅ Comprovante da Luz", type=["pdf", "jpg", "jpeg", "png", "txt"], key="up_comp_luz")
+                comp_luz  = st.file_uploader("✅ Comprovante da Luz",      type=["pdf","jpg","jpeg","png","txt"], key="up_comp_luz")
             with col_c2:
-                comp_agua = st.file_uploader("✅ Comprovante da Água", type=["pdf", "jpg", "jpeg", "png", "txt"], key="up_comp_agua")
+                comp_agua = st.file_uploader("✅ Comprovante da Água",     type=["pdf","jpg","jpeg","png","txt"], key="up_comp_agua")
             with col_c3:
-                comp_net = st.file_uploader("✅ Comprovante da Internet", type=["pdf", "jpg", "jpeg", "png", "txt"], key="up_comp_net")
+                comp_net  = st.file_uploader("✅ Comprovante da Internet", type=["pdf","jpg","jpeg","png","txt"], key="up_comp_net")
 
             st.markdown("---")
-
             if st.button("💾 Salvar e Publicar no Sistema", use_container_width=True):
                 with st.spinner("Salvando dados..."):
                     try:
                         salvar_dados_sheets(prefixo_data, val_luz, total_kwh, leitura_ant_input, leitura_at_input, val_agua)
-
-                        if arquivo_luz is not None:
-                            upload_documento_drive(arquivo_luz, f"{prefixo_data} - luz{os.path.splitext(arquivo_luz.name)[1].lower()}")
-                        if arquivo_agua is not None:
-                            upload_documento_drive(arquivo_agua, f"{prefixo_data} - água{os.path.splitext(arquivo_agua.name)[1].lower()}")
-                        if comp_luz is not None:
-                            upload_documento_drive(comp_luz, f"{prefixo_data} - comp_luz{os.path.splitext(comp_luz.name)[1].lower()}")
-                        if comp_agua is not None:
-                            upload_documento_drive(comp_agua, f"{prefixo_data} - comp_água{os.path.splitext(comp_agua.name)[1].lower()}")
-                        if comp_net is not None:
-                            upload_documento_drive(comp_net, f"{prefixo_data} - comp_internet{os.path.splitext(comp_net.name)[1].lower()}")
-
+                        for arq, sufixo in [
+                            (arquivo_luz,  "luz"),
+                            (arquivo_agua, "água"),
+                            (comp_luz,     "comp_luz"),
+                            (comp_agua,    "comp_água"),
+                            (comp_net,     "comp_internet"),
+                        ]:
+                            if arq is not None:
+                                ext = os.path.splitext(arq.name)[1].lower()
+                                upload_documento_drive(arq, f"{prefixo_data} - {sufixo}{ext}")
                         st.success(f"✅ Dados de {mes_ano} salvos com sucesso!")
                     except Exception as e:
                         st.error(f"❌ Erro ao salvar: {e}")
 
         with aba_historico:
             with st.spinner("Buscando arquivos no Drive..."):
-                arquivos_na_pasta = listar_todos_arquivos_drive()
-                if arquivos_na_pasta:
-                    for arq in sorted(arquivos_na_pasta):
+                arquivos = listar_todos_arquivos_drive()
+                if arquivos:
+                    for arq in sorted(arquivos):
                         st.write(f"📁 {arq}")
                 else:
                     st.info("Nenhum arquivo encontrado na pasta do Drive.")
 
     # ------------------------------------------
-    # 2.2. ESPAÇO DA FAMÍLIA
+    # ESPAÇO DA FAMÍLIA
     # ------------------------------------------
     elif st.session_state.perfil in ["familia", "marido"]:
-        if st.session_state.perfil == "marido":
-            st.markdown(f"<h3 style='text-align: center; color: #3E2723;'>👋 Bem-vindo ao seu Espaço, {st.session_state.usuario_atual}!</h3>", unsafe_allow_html=True)
+        eh_marido = st.session_state.perfil == "marido"
+
+        if eh_marido:
+            st.markdown(f"<h3 style='text-align:center;color:#3E2723;'>👋 Bem-vindo ao seu Espaço, {st.session_state.usuario_atual}!</h3>", unsafe_allow_html=True)
         else:
-            st.markdown("<h3 style='text-align: center; color: #3E2723;'>👋 Bem-vindo ao Espaço da Família!</h3>", unsafe_allow_html=True)
+            st.markdown("<h3 style='text-align:center;color:#3E2723;'>👋 Bem-vindo ao Espaço da Família!</h3>", unsafe_allow_html=True)
 
         mes_selecionado = st.selectbox("Selecione o Mês/Ano:", LISTA_MESES, index=4)
-        codigo_mes = MAPA_MESES[mes_selecionado]
+        codigo_mes      = MAPA_MESES[mes_selecionado]
 
         with st.spinner("Carregando valores..."):
             dados = carregar_dados_sheets(codigo_mes)
 
         if dados:
-            if st.session_state.perfil == "marido":
-                parte_luz_exibida  = dados["parte_amoreco_luz"]
-                parte_agua_exibida = dados["parte_amoreco_agua"]
-                total_a_pagar      = dados["total_amoreco"]
-                titulo_detalhe     = "📝 Detalhamento dos Gastos (Dry / Rafa)"
+            if eh_marido:
+                parte_luz      = dados["parte_amoreco_luz"]
+                parte_agua     = dados["parte_amoreco_agua"]
+                parte_internet = dados["parte_amoreco_internet"]
+                total_a_pagar  = dados["total_amoreco"]
+                titulo_detalhe = "📝 Detalhamento dos Gastos (Dry / Rafa)"
             else:
-                parte_luz_exibida  = dados["parte_vicente_luz"]
-                parte_agua_exibida = dados["parte_vicente_agua"]
-                total_a_pagar      = dados["total_vicente"]
-                titulo_detalhe     = "📝 Detalhamento dos Gastos (Gaby / Mandy)"
+                parte_luz      = dados["parte_vicente_luz"]
+                parte_agua     = dados["parte_vicente_agua"]
+                parte_internet = dados["parte_vicente_internet"]
+                total_a_pagar  = dados["total_vicente"]
+                titulo_detalhe = "📝 Detalhamento dos Gastos (Gaby / Mandy)"
         else:
-            parte_luz_exibida  = 0.0
-            parte_agua_exibida = 0.0
-            total_a_pagar      = 0.0
-            titulo_detalhe     = "📝 Detalhamento dos Gastos"
+            parte_luz = parte_agua = parte_internet = total_a_pagar = 0.0
+            titulo_detalhe = "📝 Detalhamento dos Gastos"
 
+        # RESUMO + PIX
         st.markdown(f"""
             <div class='destaque-box'>
-                <h3 style='margin-top:0; color:#3E2723;'>💰 Resumo do Mês: {mes_selecionado}</h3>
-                <p style='font-size: 19px;'><b>Total a Pagar:</b> <span style='color: #2E7D32; font-size: 24px; font-weight: bold;'>R$ {total_a_pagar:.2f}</span></p>
-                <hr style='border: 0.5px solid #D16B5B;'>
-                <p style='font-size: 16px; margin-bottom: 0;'>🔑 <b>Chave PIX:</b> <code style='font-size: 15px; background-color: #EEA296; color: #3E2723; padding: 4px 8px; border-radius: 4px;'>08974285959</code></p>
+                <h3 style='margin-top:0;color:#3E2723;'>💰 Resumo do Mês: {mes_selecionado}</h3>
+                <p style='font-size:19px;'><b>Total a Pagar:</b>
+                <span style='color:#2E7D32;font-size:24px;font-weight:bold;'>R$ {total_a_pagar:.2f}</span></p>
+                <hr style='border:0.5px solid #D16B5B;'>
+                <p style='font-size:16px;margin-bottom:0;'>🔑 <b>Chave PIX:</b>
+                <code style='font-size:15px;background-color:#EEA296;color:#3E2723;padding:4px 8px;border-radius:4px;'>{PIX_CHAVE}</code></p>
             </div>
         """, unsafe_allow_html=True)
 
-        st.markdown("<h4 style='text-align: center;'>📱 Escaneie para Pagar (Pix Copia e Cola / QR Code)</h4>", unsafe_allow_html=True)
-        st.info("Área reservada para a imagem do QR Code correspondente ao valor.")
+        # QR CODE DINÂMICO
+        if total_a_pagar > 0:
+            st.markdown("<h4 style='text-align:center;'>📱 QR Code PIX — Escaneie para Pagar</h4>", unsafe_allow_html=True)
+            qr_bytes = gerar_qrcode_imagem(total_a_pagar)
+            col_qr1, col_qr2, col_qr3 = st.columns([1, 2, 1])
+            with col_qr2:
+                st.image(qr_bytes, caption=f"R$ {total_a_pagar:.2f} → {PIX_CHAVE}", use_container_width=True)
+        else:
+            st.info("QR Code disponível após o Admin lançar os valores do mês.")
 
+        # DETALHAMENTO
         st.markdown(f"""
             <div class="caixa-nazare-container">
-                <h4 style="margin-top: 0; color: #21100B; text-shadow: 0px 0px 4px rgba(255,255,255,0.8);">{titulo_detalhe}</h4>
+                <h4 style="margin-top:0;color:#21100B;text-shadow:0px 0px 4px rgba(255,255,255,0.8);">{titulo_detalhe}</h4>
                 <div class="grid-nazare">
                     <div class="item-nazare">
                         <div class="label-nazare">⚡ Energia Copel</div>
-                        <div class="val-nazare">R$ {parte_luz_exibida:.2f}</div>
+                        <div class="val-nazare">R$ {parte_luz:.2f}</div>
                     </div>
                     <div class="item-nazare">
                         <div class="label-nazare">💧 Água Sanepar</div>
-                        <div class="val-nazare">R$ {parte_agua_exibida:.2f}</div>
+                        <div class="val-nazare">R$ {parte_agua:.2f}</div>
                     </div>
                     <div class="item-nazare">
-                        <div class="label-nazare">🌐 Internet (Fixo)</div>
-                        <div class="val-nazare">R$ {INTERNET_FIXO:.2f}</div>
+                        <div class="label-nazare">🌐 Internet</div>
+                        <div class="val-nazare">R$ {parte_internet:.2f}</div>
                     </div>
                 </div>
             </div>
         """, unsafe_allow_html=True)
 
-        st.markdown("<h4 style='text-align: center; margin-top: 25px;'>📂 Baixar Faturas Oficiais</h4>", unsafe_allow_html=True)
+        # FATURAS
+        st.markdown("<h4 style='text-align:center;margin-top:25px;'>📂 Baixar Faturas Oficiais</h4>", unsafe_allow_html=True)
         col_down_1, col_down_2 = st.columns(2)
 
-        id_luz_drive = None
-        nome_luz_final = None
-        for ext in ['.pdf', '.jpg', '.jpeg', '.png']:
-            id_luz_drive = buscar_arquivo_no_drive(f"{codigo_mes} - luz{ext}")
-            if id_luz_drive:
-                nome_luz_final = f"{codigo_mes} - luz{ext}"
-                break
-
+        id_luz = None; nome_luz = None
+        for ext in ['.pdf','.jpg','.jpeg','.png']:
+            id_luz = buscar_arquivo_no_drive(f"{codigo_mes} - luz{ext}")
+            if id_luz: nome_luz = f"{codigo_mes} - luz{ext}"; break
         with col_down_1:
-            if id_luz_drive:
-                conteudo_luz = baixar_arquivo_do_drive(id_luz_drive)
-                st.download_button(label="📥 Fatura Luz", data=conteudo_luz, file_name=nome_luz_final, mime="application/octet-stream")
+            if id_luz:
+                st.download_button("📥 Fatura Luz", data=baixar_arquivo_do_drive(id_luz), file_name=nome_luz, mime="application/octet-stream")
             else:
                 st.markdown('<div class="erro-grande"><span>❌</span>Fatura de Luz<br>não disponível</div>', unsafe_allow_html=True)
 
-        id_agua_drive = None
-        nome_agua_final = None
-        for ext in ['.pdf', '.jpg', '.jpeg', '.png']:
-            id_agua_drive = buscar_arquivo_no_drive(f"{codigo_mes} - água{ext}")
-            if id_agua_drive:
-                nome_agua_final = f"{codigo_mes} - água{ext}"
-                break
-
+        id_agua = None; nome_agua = None
+        for ext in ['.pdf','.jpg','.jpeg','.png']:
+            id_agua = buscar_arquivo_no_drive(f"{codigo_mes} - água{ext}")
+            if id_agua: nome_agua = f"{codigo_mes} - água{ext}"; break
         with col_down_2:
-            if id_agua_drive:
-                conteudo_agua = baixar_arquivo_do_drive(id_agua_drive)
-                st.download_button(label="📥 Fatura Água", data=conteudo_agua, file_name=nome_agua_final, mime="application/octet-stream")
+            if id_agua:
+                st.download_button("📥 Fatura Água", data=baixar_arquivo_do_drive(id_agua), file_name=nome_agua, mime="application/octet-stream")
             else:
                 st.markdown('<div class="erro-grande"><span>❌</span>Fatura de Água<br>não disponível</div>', unsafe_allow_html=True)
 
-        st.markdown("<hr style='border: 0.5px dashed #D16B5B;'>", unsafe_allow_html=True)
-        st.markdown("<h4 style='text-align: center;'>🧾 Comprovantes de Quitação</h4>", unsafe_allow_html=True)
+        # COMPROVANTES
+        st.markdown("<hr style='border:0.5px dashed #D16B5B;'>", unsafe_allow_html=True)
+        st.markdown("<h4 style='text-align:center;'>🧾 Comprovantes de Quitação</h4>", unsafe_allow_html=True)
         col_c1, col_c2, col_c3 = st.columns(3)
 
-        id_c_luz = None
-        nome_c_luz = None
-        for ext in ['.pdf', '.jpg', '.jpeg', '.png', '.txt']:
-            id_c_luz = buscar_arquivo_no_drive(f"{codigo_mes} - comp_luz{ext}")
-            if id_c_luz:
-                nome_c_luz = f"{codigo_mes} - comp_luz{ext}"
-                break
+        id_cl = None; nome_cl = None
+        for ext in ['.pdf','.jpg','.jpeg','.png','.txt']:
+            id_cl = buscar_arquivo_no_drive(f"{codigo_mes} - comp_luz{ext}")
+            if id_cl: nome_cl = f"{codigo_mes} - comp_luz{ext}"; break
         with col_c1:
-            if id_c_luz:
-                st.download_button(label="🧾 Comp. Luz", data=baixar_arquivo_do_drive(id_c_luz), file_name=nome_c_luz)
+            if id_cl:
+                st.download_button("🧾 Comp. Luz", data=baixar_arquivo_do_drive(id_cl), file_name=nome_cl)
             else:
                 st.markdown('<div class="erro-grande"><span>❌</span>Comp. Luz<br>ausente</div>', unsafe_allow_html=True)
 
-        id_c_agua = None
-        nome_c_agua = None
-        for ext in ['.pdf', '.jpg', '.jpeg', '.png', '.txt']:
-            id_c_agua = buscar_arquivo_no_drive(f"{codigo_mes} - comp_água{ext}")
-            if id_c_agua:
-                nome_c_agua = f"{codigo_mes} - comp_água{ext}"
-                break
+        id_ca = None; nome_ca = None
+        for ext in ['.pdf','.jpg','.jpeg','.png','.txt']:
+            id_ca = buscar_arquivo_no_drive(f"{codigo_mes} - comp_água{ext}")
+            if id_ca: nome_ca = f"{codigo_mes} - comp_água{ext}"; break
         with col_c2:
-            if id_c_agua:
-                st.download_button(label="🧾 Comp. Água", data=baixar_arquivo_do_drive(id_c_agua), file_name=nome_c_agua)
+            if id_ca:
+                st.download_button("🧾 Comp. Água", data=baixar_arquivo_do_drive(id_ca), file_name=nome_ca)
             else:
                 st.markdown('<div class="erro-grande"><span>❌</span>Comp. Água<br>ausente</div>', unsafe_allow_html=True)
 
-        id_c_net = None
-        nome_c_net = None
-        for ext in ['.pdf', '.jpg', '.jpeg', '.png', '.txt']:
-            id_c_net = buscar_arquivo_no_drive(f"{codigo_mes} - comp_internet{ext}")
-            if id_c_net:
-                nome_c_net = f"{codigo_mes} - comp_internet{ext}"
-                break
+        id_cn = None; nome_cn = None
+        for ext in ['.pdf','.jpg','.jpeg','.png','.txt']:
+            id_cn = buscar_arquivo_no_drive(f"{codigo_mes} - comp_internet{ext}")
+            if id_cn: nome_cn = f"{codigo_mes} - comp_internet{ext}"; break
         with col_c3:
-            if id_c_net:
-                st.download_button(label="🧾 Comp. Net", data=baixar_arquivo_do_drive(id_c_net), file_name=nome_c_net)
+            if id_cn:
+                st.download_button("🧾 Comp. Net", data=baixar_arquivo_do_drive(id_cn), file_name=nome_cn)
             else:
                 st.markdown('<div class="erro-grande"><span>❌</span>Comp. Internet<br>ausente</div>', unsafe_allow_html=True)
