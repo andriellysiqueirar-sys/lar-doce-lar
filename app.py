@@ -36,7 +36,7 @@ PASTA_DRIVE_ID  = "1uM5fKwOJyo418E-Te3EpyPuLMvGpVdQH"
 PLANILHA_ID     = "1la4BUnm9du32LDk0m1FcQay1HxFaYjJfCYbrDLH9rg4"
 ABA_DADOS       = "Planilha"
 
-NOME_IMAGEM  = "lar_doce_lar.png"
+NOME_IMAGEM   = "lar_doce_lar.png"
 IMAGEM_NAZARE = "Nazare.jpg"
 
 LISTA_MESES = [
@@ -51,11 +51,11 @@ MAPA_MESES = {
     "Outubro/2026": "2026.10", "Novembro/2026": "2026.11", "Dezembro/2026": "2026.12"
 }
 
-INTERNET_FIXO   = 55.00
-PIX_CHAVE       = "08974285959"
-PIX_NOME        = "Andrielly Cristina"   # max 25 chars
-PIX_CIDADE      = "Araucaria"
-PIX_DESCRICAO   = "Lar doce Lar"
+INTERNET_FIXO = 55.00
+PIX_CHAVE     = "08974285959"
+PIX_NOME      = "Andrielly Cristina"
+PIX_CIDADE    = "Araucaria"
+PIX_DESCRICAO = "Lar doce Lar"
 
 USUARIOS = {
     "Admin":   {"senha": "2311", "perfil": "admin"},
@@ -64,8 +64,8 @@ USUARIOS = {
 }
 
 if 'logado' not in st.session_state:
-    st.session_state.logado      = False
-    st.session_state.perfil      = None
+    st.session_state.logado        = False
+    st.session_state.perfil        = None
     st.session_state.usuario_atual = None
 
 # --- IMAGENS BASE64 ---
@@ -121,6 +121,17 @@ st.markdown(f"""
     .caixa-nazare-container {{
         {nazare_style} padding:22px;border-radius:12px;
         box-shadow:0px 4px 15px rgba(0,0,0,0.1);border:2px solid #D16B5B;margin-bottom:20px; }}
+    .explicativo-box {{
+        background-color:#FFF8F6;padding:18px;border-radius:12px;
+        border:1px dashed #D16B5B;margin-bottom:20px; }}
+    .explicativo-linha {{
+        display:flex;justify-content:space-between;padding:6px 0;
+        border-bottom:1px solid #F0D0CA;font-size:15px; }}
+    .explicativo-linha:last-child {{ border-bottom:none; }}
+    .explicativo-label {{ color:#3E2723!important;font-weight:500; }}
+    .explicativo-valor {{ color:#2F1F1D!important;font-weight:bold; }}
+    .explicativo-destaque {{ background-color:#D16B5B;color:#fff!important;
+        padding:8px 12px;border-radius:8px;margin-top:10px;text-align:center;font-size:16px;font-weight:bold; }}
     .grid-nazare {{ display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-top:15px; }}
     .item-nazare {{ flex:1;min-width:120px;text-align:center; }}
     .label-nazare {{ color:#21100B!important;font-size:14px;font-weight:bold;margin-bottom:5px;text-shadow:0px 0px 4px rgba(255,255,255,0.8); }}
@@ -156,31 +167,30 @@ def _crc16(data: str) -> str:
 def _emv_field(id_: str, value: str) -> str:
     return f"{id_}{len(value):02d}{value}"
 
-def gerar_payload_pix(chave: str, nome: str, cidade: str, valor: float, descricao: str) -> str:
-    valor_str   = f"{valor:.2f}"
-    gui         = _emv_field("00", "br.gov.bcb.pix")
+def gerar_payload_pix(chave, nome, cidade, valor, descricao):
+    valor_str = f"{valor:.2f}"
+    gui = _emv_field("00", "br.gov.bcb.pix")
     chave_field = _emv_field("01", chave)
     if descricao:
         desc_field = _emv_field("02", descricao[:72])
         merchant_account = _emv_field("26", gui + chave_field + desc_field)
     else:
         merchant_account = _emv_field("26", gui + chave_field)
-
     payload = (
-        _emv_field("00", "01")           # Payload format indicator
-        + merchant_account               # Merchant account info
-        + _emv_field("52", "0000")       # MCC
-        + _emv_field("53", "986")        # Currency BRL
-        + _emv_field("54", valor_str)    # Transaction amount
-        + _emv_field("58", "BR")         # Country
-        + _emv_field("59", nome[:25])    # Merchant name
-        + _emv_field("60", cidade[:15])  # Merchant city
-        + _emv_field("62", _emv_field("05", "***"))  # Additional data
-        + "6304"                         # CRC placeholder
+        _emv_field("00", "01")
+        + merchant_account
+        + _emv_field("52", "0000")
+        + _emv_field("53", "986")
+        + _emv_field("54", valor_str)
+        + _emv_field("58", "BR")
+        + _emv_field("59", nome[:25])
+        + _emv_field("60", cidade[:15])
+        + _emv_field("62", _emv_field("05", "***"))
+        + "6304"
     )
     return payload + _crc16(payload)
 
-def gerar_qrcode_imagem(valor: float) -> bytes:
+def gerar_qrcode_imagem(valor):
     payload = gerar_payload_pix(PIX_CHAVE, PIX_NOME, PIX_CIDADE, valor, PIX_DESCRICAO)
     qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=6, border=2)
     qr.add_data(payload)
@@ -222,22 +232,19 @@ def buscar_linha_mes(prefixo):
 
 def salvar_dados_sheets(prefixo, val_luz, total_kwh, leitura_ant, leitura_at, val_agua):
     garantir_cabecalho_sheets()
-
     if total_kwh > 0:
         preco_kwh         = val_luz / total_kwh
         consumo_amoreco   = leitura_at - leitura_ant
         parte_amoreco_luz = round(preco_kwh * consumo_amoreco, 2)
     else:
         parte_amoreco_luz = 0.0
-
-    parte_vicente_luz       = round(val_luz - parte_amoreco_luz, 2)
-    parte_amoreco_agua      = round(val_agua / 2, 2)
-    parte_vicente_agua      = round(val_agua / 2, 2)
-    parte_amoreco_internet  = INTERNET_FIXO
-    parte_vicente_internet  = INTERNET_FIXO
-    total_amoreco           = round(parte_amoreco_luz + parte_amoreco_agua + INTERNET_FIXO, 2)
-    total_vicente           = round(parte_vicente_luz + parte_vicente_agua + INTERNET_FIXO, 2)
-
+    parte_vicente_luz      = round(val_luz - parte_amoreco_luz, 2)
+    parte_amoreco_agua     = round(val_agua / 2, 2)
+    parte_vicente_agua     = round(val_agua / 2, 2)
+    parte_amoreco_internet = INTERNET_FIXO
+    parte_vicente_internet = INTERNET_FIXO
+    total_amoreco          = round(parte_amoreco_luz + parte_amoreco_agua + INTERNET_FIXO, 2)
+    total_vicente          = round(parte_vicente_luz + parte_vicente_agua + INTERNET_FIXO, 2)
     nova_linha = [[
         prefixo, val_luz, total_kwh, leitura_ant, leitura_at, val_agua, INTERNET_FIXO,
         parte_amoreco_luz, parte_vicente_luz,
@@ -245,7 +252,6 @@ def salvar_dados_sheets(prefixo, val_luz, total_kwh, leitura_ant, leitura_at, va
         parte_amoreco_internet, parte_vicente_internet,
         total_amoreco, total_vicente
     ]]
-
     linha_existente = buscar_linha_mes(prefixo)
     if linha_existente:
         sheets_service.spreadsheets().values().update(
@@ -268,20 +274,20 @@ def carregar_dados_sheets(prefixo):
                     try: return float(str(v).replace(',', '.'))
                     except: return 0.0
                 return {
-                    "val_luz":                  sf(linha[1])  if len(linha) > 1  else 0.0,
-                    "total_kwh":                sf(linha[2])  if len(linha) > 2  else 0.0,
-                    "leitura_ant":              sf(linha[3])  if len(linha) > 3  else 0.0,
-                    "leitura_at":               sf(linha[4])  if len(linha) > 4  else 0.0,
-                    "val_agua":                 sf(linha[5])  if len(linha) > 5  else 0.0,
-                    "internet_fixo":            sf(linha[6])  if len(linha) > 6  else INTERNET_FIXO,
-                    "parte_amoreco_luz":        sf(linha[7])  if len(linha) > 7  else 0.0,
-                    "parte_vicente_luz":        sf(linha[8])  if len(linha) > 8  else 0.0,
-                    "parte_amoreco_agua":       sf(linha[9])  if len(linha) > 9  else 0.0,
-                    "parte_vicente_agua":       sf(linha[10]) if len(linha) > 10 else 0.0,
-                    "parte_amoreco_internet":   sf(linha[11]) if len(linha) > 11 else INTERNET_FIXO,
-                    "parte_vicente_internet":   sf(linha[12]) if len(linha) > 12 else INTERNET_FIXO,
-                    "total_amoreco":            sf(linha[13]) if len(linha) > 13 else 0.0,
-                    "total_vicente":            sf(linha[14]) if len(linha) > 14 else 0.0,
+                    "val_luz":                 sf(linha[1])  if len(linha) > 1  else 0.0,
+                    "total_kwh":               sf(linha[2])  if len(linha) > 2  else 0.0,
+                    "leitura_ant":             sf(linha[3])  if len(linha) > 3  else 0.0,
+                    "leitura_at":              sf(linha[4])  if len(linha) > 4  else 0.0,
+                    "val_agua":                sf(linha[5])  if len(linha) > 5  else 0.0,
+                    "internet_fixo":           sf(linha[6])  if len(linha) > 6  else INTERNET_FIXO,
+                    "parte_amoreco_luz":       sf(linha[7])  if len(linha) > 7  else 0.0,
+                    "parte_vicente_luz":       sf(linha[8])  if len(linha) > 8  else 0.0,
+                    "parte_amoreco_agua":      sf(linha[9])  if len(linha) > 9  else 0.0,
+                    "parte_vicente_agua":      sf(linha[10]) if len(linha) > 10 else 0.0,
+                    "parte_amoreco_internet":  sf(linha[11]) if len(linha) > 11 else INTERNET_FIXO,
+                    "parte_vicente_internet":  sf(linha[12]) if len(linha) > 12 else INTERNET_FIXO,
+                    "total_amoreco":           sf(linha[13]) if len(linha) > 13 else 0.0,
+                    "total_vicente":           sf(linha[14]) if len(linha) > 14 else 0.0,
                 }
     except Exception as e:
         st.warning(f"Erro ao carregar planilha: {e}")
@@ -338,6 +344,80 @@ def listar_todos_arquivos_drive():
         return []
 
 # ==========================================
+# EXPLICATIVO DA CONTA DE LUZ
+# ==========================================
+
+def exibir_explicativo_luz(dados, eh_marido):
+    val_luz    = dados["val_luz"]
+    total_kwh  = dados["total_kwh"]
+    leitura_ant = dados["leitura_ant"]
+    leitura_at  = dados["leitura_at"]
+    parte_amoreco_luz = dados["parte_amoreco_luz"]
+    parte_vicente_luz = dados["parte_vicente_luz"]
+
+    if total_kwh == 0:
+        st.info("Dados insuficientes para exibir o explicativo.")
+        return
+
+    preco_kwh       = val_luz / total_kwh
+    consumo_amoreco = leitura_at - leitura_ant
+    consumo_vicente = total_kwh - consumo_amoreco
+
+    if eh_marido:
+        meu_consumo  = consumo_amoreco
+        minha_parte  = parte_amoreco_luz
+        quem_sou     = "Dry / Rafa"
+        formula      = f"{meu_consumo:.1f} kWh × R$ {preco_kwh:.4f}/kWh"
+    else:
+        meu_consumo  = consumo_vicente
+        minha_parte  = parte_vicente_luz
+        quem_sou     = "Gaby / Mandy"
+        formula      = f"R$ {val_luz:.2f} − R$ {parte_amoreco_luz:.2f} (parte Dry/Rafa)"
+
+    st.markdown(f"""
+        <div class="explicativo-box">
+            <p style="font-weight:bold;font-size:16px;color:#3E2723;margin-bottom:12px;">
+                ⚡ Como chegamos no seu valor de luz — {quem_sou}
+            </p>
+            <div class="explicativo-linha">
+                <span class="explicativo-label">💰 Valor total da fatura COPEL</span>
+                <span class="explicativo-valor">R$ {val_luz:.2f}</span>
+            </div>
+            <div class="explicativo-linha">
+                <span class="explicativo-label">📊 Consumo total da casa</span>
+                <span class="explicativo-valor">{total_kwh:.1f} kWh</span>
+            </div>
+            <div class="explicativo-linha">
+                <span class="explicativo-label">💡 Preço por kWh</span>
+                <span class="explicativo-valor">R$ {preco_kwh:.4f}</span>
+            </div>
+            <div class="explicativo-linha">
+                <span class="explicativo-label">🔍 Leitura anterior do medidor (Dry/Rafa)</span>
+                <span class="explicativo-valor">{leitura_ant:.1f}</span>
+            </div>
+            <div class="explicativo-linha">
+                <span class="explicativo-label">🔍 Leitura atual do medidor (Dry/Rafa)</span>
+                <span class="explicativo-valor">{leitura_at:.1f}</span>
+            </div>
+            <div class="explicativo-linha">
+                <span class="explicativo-label">⚡ Consumo medido Dry/Rafa</span>
+                <span class="explicativo-valor">{consumo_amoreco:.1f} kWh</span>
+            </div>
+            <div class="explicativo-linha">
+                <span class="explicativo-label">⚡ Consumo medido Gaby/Mandy</span>
+                <span class="explicativo-valor">{consumo_vicente:.1f} kWh</span>
+            </div>
+            <div class="explicativo-linha">
+                <span class="explicativo-label">🧮 Cálculo da sua parte</span>
+                <span class="explicativo-valor">{formula}</span>
+            </div>
+            <div class="explicativo-destaque">
+                Sua parte da luz: R$ {minha_parte:.2f}
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+
+# ==========================================
 # 1. TELA DE LOGIN
 # ==========================================
 if not st.session_state.logado:
@@ -365,8 +445,8 @@ else:
     with col_topo_2:
         st.markdown('<div class="botao-sair">', unsafe_allow_html=True)
         if st.button("🚪 Sair"):
-            st.session_state.logado = False
-            st.session_state.perfil = None
+            st.session_state.logado        = False
+            st.session_state.perfil        = None
             st.session_state.usuario_atual = None
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
@@ -404,16 +484,16 @@ else:
             st.markdown("#### ⚡ Fatura de Energia - COPEL")
             col_l1, col_l2 = st.columns(2)
             with col_l1:
-                val_luz   = st.number_input("Valor Total da Fatura Copel (R$)", min_value=0.0, step=0.01, value=luz_fatura,  key="adm_luz_tot")
+                val_luz   = st.number_input("Valor Total da Fatura Copel (R$)", min_value=0.0, step=0.01, value=luz_fatura, key="adm_luz_tot")
             with col_l2:
-                total_kwh = st.number_input("Consumo Total de kW/h",            min_value=0.0, step=0.1,  value=kwh_fatura,  key="adm_kwh_tot")
+                total_kwh = st.number_input("Consumo Total de kW/h", min_value=0.0, step=0.1, value=kwh_fatura, key="adm_kwh_tot")
 
             st.markdown("#### 🔍 Medidor Interno (Dry / Rafa)")
             col_m1, col_m2 = st.columns(2)
             with col_m1:
                 leitura_ant_input = st.number_input("Leitura Anterior do Medidor Interno", min_value=0.0, step=0.1, value=medidor_ant)
             with col_m2:
-                leitura_at_input  = st.number_input("Leitura Atual do Medidor Interno",    min_value=0.0, step=0.1, value=leitura_at)
+                leitura_at_input  = st.number_input("Leitura Atual do Medidor Interno", min_value=0.0, step=0.1, value=leitura_at)
 
             st.markdown("#### 💧 Fatura de Água SANEPAR")
             val_agua = st.number_input("Valor Total da Conta de Água (R$)", min_value=0.0, step=0.01, value=agua_fatura, key="adm_agua_tot")
@@ -500,7 +580,7 @@ else:
             parte_luz = parte_agua = parte_internet = total_a_pagar = 0.0
             titulo_detalhe = "📝 Detalhamento dos Gastos"
 
-        # RESUMO + PIX
+        # RESUMO
         st.markdown(f"""
             <div class='destaque-box'>
                 <h3 style='margin-top:0;color:#3E2723;'>💰 Resumo do Mês: {mes_selecionado}</h3>
@@ -512,45 +592,15 @@ else:
             </div>
         """, unsafe_allow_html=True)
 
-        # ==========================================
-        # QR CODE + PIX COPIA E COLA
-        # ==========================================
-
+        # QR CODE
         if total_a_pagar > 0:
-
-            st.markdown(
-                "<h4 style='text-align:center;'>📱 QR Code PIX — Escaneie para Pagar</h4>",
-                unsafe_allow_html=True
-            )
-
-            # Gera QR Code
+            st.markdown("<h4 style='text-align:center;'>📱 QR Code PIX — Escaneie para Pagar</h4>", unsafe_allow_html=True)
             qr_bytes = gerar_qrcode_imagem(total_a_pagar)
-
             col_qr1, col_qr2, col_qr3 = st.columns([1, 2, 1])
-
             with col_qr2:
-
-                st.image(
-                    qr_bytes,
-                    caption=f"R$ {total_a_pagar:.2f} → {PIX_CHAVE}",
-                    use_container_width=True
-                )
-
-                # PIX Copia e Cola
-                payload_pix = gerar_payload_pix(
-                    PIX_CHAVE,
-                    PIX_NOME,
-                    PIX_CIDADE,
-                    total_a_pagar,
-                    PIX_DESCRICAO
-                )
-
-                st.text_area(
-                    "📋 PIX Copia e Cola",
-                    value=payload_pix,
-                    height=120
-                )
-
+                st.image(qr_bytes, caption=f"R$ {total_a_pagar:.2f} → {PIX_CHAVE}", use_container_width=True)
+                payload_pix = gerar_payload_pix(PIX_CHAVE, PIX_NOME, PIX_CIDADE, total_a_pagar, PIX_DESCRICAO)
+                st.text_area("📋 PIX Copia e Cola", value=payload_pix, height=120)
         else:
             st.info("QR Code disponível após o Admin lançar os valores do mês.")
 
@@ -574,6 +624,11 @@ else:
                 </div>
             </div>
         """, unsafe_allow_html=True)
+
+        # EXPLICATIVO DA LUZ (expansível)
+        if dados and dados["total_kwh"] > 0:
+            with st.expander("💡 Como foi calculado o valor da luz? Clique para ver"):
+                exibir_explicativo_luz(dados, eh_marido)
 
         # FATURAS
         st.markdown("<h4 style='text-align:center;margin-top:25px;'>📂 Baixar Faturas Oficiais</h4>", unsafe_allow_html=True)
