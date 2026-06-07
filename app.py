@@ -348,10 +348,10 @@ def listar_todos_arquivos_drive():
 # ==========================================
 
 def exibir_explicativo_luz(dados, eh_marido):
-    val_luz    = dados["val_luz"]
-    total_kwh  = dados["total_kwh"]
-    leitura_ant = dados["leitura_ant"]
-    leitura_at  = dados["leitura_at"]
+    val_luz         = dados["val_luz"]
+    total_kwh       = dados["total_kwh"]
+    leitura_ant     = dados["leitura_ant"]
+    leitura_at      = dados["leitura_at"]
     parte_amoreco_luz = dados["parte_amoreco_luz"]
     parte_vicente_luz = dados["parte_vicente_luz"]
 
@@ -364,23 +364,22 @@ def exibir_explicativo_luz(dados, eh_marido):
     consumo_vicente = total_kwh - consumo_amoreco
 
     if eh_marido:
-        meu_consumo  = consumo_amoreco
-        minha_parte  = parte_amoreco_luz
-        quem_sou     = "Dry / Rafa"
-        formula      = f"{meu_consumo:.1f} kWh × R$ {preco_kwh:.4f}/kWh"
+        meu_consumo = consumo_amoreco
+        minha_parte = parte_amoreco_luz
+        quem_sou    = "Dry / Rafa"
     else:
-        meu_consumo  = consumo_vicente
-        minha_parte  = parte_vicente_luz
-        quem_sou     = "Gaby / Mandy"
-        formula      = f"R$ {val_luz:.2f} − R$ {parte_amoreco_luz:.2f} (parte Dry/Rafa)"
+        meu_consumo = consumo_vicente
+        minha_parte = parte_vicente_luz
+        quem_sou    = "Gaby / Mandy"
 
     st.markdown(f"""
         <div class="explicativo-box">
+
             <p style="font-weight:bold;font-size:16px;color:#3E2723;margin-bottom:12px;">
-                ⚡ Como chegamos no seu valor de luz — {quem_sou}
+                ⚡ Dados Gerais da Fatura COPEL
             </p>
             <div class="explicativo-linha">
-                <span class="explicativo-label">💰 Valor total da fatura COPEL</span>
+                <span class="explicativo-label">💰 Valor total da fatura</span>
                 <span class="explicativo-valor">R$ {val_luz:.2f}</span>
             </div>
             <div class="explicativo-linha">
@@ -391,29 +390,31 @@ def exibir_explicativo_luz(dados, eh_marido):
                 <span class="explicativo-label">💡 Preço por kWh</span>
                 <span class="explicativo-valor">R$ {preco_kwh:.4f}</span>
             </div>
+
+            <p style="font-weight:bold;font-size:16px;color:#3E2723;margin-top:16px;margin-bottom:12px;">
+                📊 Divisão do Consumo (kWh)
+            </p>
             <div class="explicativo-linha">
-                <span class="explicativo-label">🔍 Leitura anterior do medidor (Dry/Rafa)</span>
-                <span class="explicativo-valor">{leitura_ant:.1f}</span>
+                <span class="explicativo-label">⚡ Consumo Dry/Rafa</span>
+                <span class="explicativo-valor">{consumo_amoreco:.1f} kWh &nbsp;<small style="color:#888;">(Leitura: {leitura_ant:.1f} → {leitura_at:.1f})</small></span>
             </div>
             <div class="explicativo-linha">
-                <span class="explicativo-label">🔍 Leitura atual do medidor (Dry/Rafa)</span>
-                <span class="explicativo-valor">{leitura_at:.1f}</span>
+                <span class="explicativo-label">⚡ Consumo Gaby/Mandy</span>
+                <span class="explicativo-valor">{consumo_vicente:.1f} kWh &nbsp;<small style="color:#888;">(restante da casa)</small></span>
             </div>
+
+            <p style="font-weight:bold;font-size:16px;color:#3E2723;margin-top:16px;margin-bottom:12px;">
+                🧮 Seu Cálculo ({quem_sou})
+            </p>
             <div class="explicativo-linha">
-                <span class="explicativo-label">⚡ Consumo medido Dry/Rafa</span>
-                <span class="explicativo-valor">{consumo_amoreco:.1f} kWh</span>
+                <span class="explicativo-label">📐 Conta</span>
+                <span class="explicativo-valor">{meu_consumo:.1f} kWh × R$ {preco_kwh:.4f}</span>
             </div>
-            <div class="explicativo-linha">
-                <span class="explicativo-label">⚡ Consumo medido Gaby/Mandy</span>
-                <span class="explicativo-valor">{consumo_vicente:.1f} kWh</span>
-            </div>
-            <div class="explicativo-linha">
-                <span class="explicativo-label">🧮 Cálculo da sua parte</span>
-                <span class="explicativo-valor">{formula}</span>
-            </div>
+
             <div class="explicativo-destaque">
-                Sua parte da luz: R$ {minha_parte:.2f}
+                💰 Sua parte da luz: R$ {minha_parte:.2f}
             </div>
+
         </div>
     """, unsafe_allow_html=True)
 
