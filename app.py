@@ -618,7 +618,7 @@ else:
                 st.image(qr_bytes, caption=f"R$ {total_a_pagar:.2f} → {PIX_CHAVE}", use_container_width=True)
                 payload_pix = gerar_payload_pix(PIX_CHAVE, PIX_NOME, PIX_CIDADE, total_a_pagar, PIX_DESCRICAO)
                 st.markdown(f"""
-                    <div style="margin-top:10px;">
+                    <div style="margin-top:10px; margin-bottom:20px;">
                         <textarea id="pix_payload" style="display:none;">{payload_pix}</textarea>
                         <button onclick="
                             var t = document.getElementById('pix_payload').value;
