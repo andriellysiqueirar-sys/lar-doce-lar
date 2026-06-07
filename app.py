@@ -148,6 +148,34 @@ st.markdown(f"""
     button[kind="header"] {{ display:none!important; }}
     .stAppDeployButton {{ display:none!important; }}
     iframe {{ display:none!important; }}
+
+    /* EXPANDER — fundo sólido para legibilidade */
+    [data-testid="stExpander"] {{
+        background-color: #FDF5F3 !important;
+        border: 2px solid #D16B5B !important;
+        border-radius: 12px !important;
+    }}
+    [data-testid="stExpander"] summary {{
+        background-color: #FDF5F3 !important;
+        border-radius: 12px !important;
+        font-weight: bold;
+        color: #3E2723 !important;
+    }}
+    [data-testid="stExpander"] > div > div {{
+        background-color: #FDF5F3 !important;
+        border-radius: 0 0 12px 12px !important;
+        padding: 10px !important;
+    }}
+
+    /* MÉTRICAS — fundo sólido */
+    [data-testid="stMetric"] {{
+        background-color: #FCEBE8 !important;
+        border-radius: 10px !important;
+        padding: 10px 14px !important;
+        border: 1px solid #D16B5B !important;
+    }}
+    [data-testid="stMetricLabel"] p {{ color: #3E2723 !important; font-weight: bold; }}
+    [data-testid="stMetricValue"] {{ color: #2F1F1D !important; }}
     </style>
 """, unsafe_allow_html=True)
 
