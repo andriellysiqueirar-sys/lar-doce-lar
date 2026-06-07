@@ -348,10 +348,10 @@ def listar_todos_arquivos_drive():
 # ==========================================
 
 def exibir_explicativo_luz(dados, eh_marido):
-    val_luz         = dados["val_luz"]
-    total_kwh       = dados["total_kwh"]
-    leitura_ant     = dados["leitura_ant"]
-    leitura_at      = dados["leitura_at"]
+    val_luz           = dados["val_luz"]
+    total_kwh         = dados["total_kwh"]
+    leitura_ant       = dados["leitura_ant"]
+    leitura_at        = dados["leitura_at"]
     parte_amoreco_luz = dados["parte_amoreco_luz"]
     parte_vicente_luz = dados["parte_vicente_luz"]
 
@@ -372,51 +372,39 @@ def exibir_explicativo_luz(dados, eh_marido):
         minha_parte = parte_vicente_luz
         quem_sou    = "Gaby / Mandy"
 
-    st.markdown(f"""
-        <div class="explicativo-box">
+    # BLOCO 1 — Dados gerais
+    st.markdown("**⚡ Dados Gerais da Fatura COPEL**")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("💰 Valor total", f"R$ {val_luz:.2f}")
+        st.metric("📊 Consumo total da casa", f"{total_kwh:.1f} kWh")
+    with col2:
+        st.metric("💡 Preço por kWh", f"R$ {preco_kwh:.4f}")
 
-            <p style="font-weight:bold;font-size:16px;color:#3E2723;margin-bottom:12px;">
-                ⚡ Dados Gerais da Fatura COPEL
-            </p>
-            <div class="explicativo-linha">
-                <span class="explicativo-label">💰 Valor total da fatura</span>
-                <span class="explicativo-valor">R$ {val_luz:.2f}</span>
-            </div>
-            <div class="explicativo-linha">
-                <span class="explicativo-label">📊 Consumo total da casa</span>
-                <span class="explicativo-valor">{total_kwh:.1f} kWh</span>
-            </div>
-            <div class="explicativo-linha">
-                <span class="explicativo-label">💡 Preço por kWh</span>
-                <span class="explicativo-valor">R$ {preco_kwh:.4f}</span>
-            </div>
+    st.markdown("---")
 
-            <p style="font-weight:bold;font-size:16px;color:#3E2723;margin-top:16px;margin-bottom:12px;">
-                📊 Divisão do Consumo (kWh)
-            </p>
-            <div class="explicativo-linha">
-                <span class="explicativo-label">⚡ Consumo Dry/Rafa</span>
-                <span class="explicativo-valor">{consumo_amoreco:.1f} kWh &nbsp;<small style="color:#888;">(Leitura: {leitura_ant:.1f} → {leitura_at:.1f})</small></span>
-            </div>
-            <div class="explicativo-linha">
-                <span class="explicativo-label">⚡ Consumo Gaby/Mandy</span>
-                <span class="explicativo-valor">{consumo_vicente:.1f} kWh &nbsp;<small style="color:#888;">(restante da casa)</small></span>
-            </div>
+    # BLOCO 2 — Divisão do consumo
+    st.markdown("**📊 Divisão do Consumo (kWh)**")
+    col3, col4 = st.columns(2)
+    with col3:
+        st.metric(
+            "⚡ Consumo Dry/Rafa",
+            f"{consumo_amoreco:.1f} kWh",
+            help=f"Leitura: {leitura_ant:.1f} → {leitura_at:.1f}"
+        )
+    with col4:
+        st.metric(
+            "⚡ Consumo Gaby/Mandy",
+            f"{consumo_vicente:.1f} kWh",
+            help="Restante da casa (total − Dry/Rafa)"
+        )
 
-            <p style="font-weight:bold;font-size:16px;color:#3E2723;margin-top:16px;margin-bottom:12px;">
-                🧮 Seu Cálculo ({quem_sou})
-            </p>
-            <div class="explicativo-linha">
-                <span class="explicativo-label">📐 Conta</span>
-                <span class="explicativo-valor">{meu_consumo:.1f} kWh × R$ {preco_kwh:.4f}</span>
-            </div>
+    st.markdown("---")
 
-            <div class="explicativo-destaque">
-                💰 Sua parte da luz: R$ {minha_parte:.2f}
-            </div>
-
-        </div>
-    """, unsafe_allow_html=True)
+    # BLOCO 3 — Seu cálculo
+    st.markdown(f"**🧮 Seu Cálculo ({quem_sou})**")
+    st.markdown(f"📐 **Conta:** {meu_consumo:.1f} kWh × R$ {preco_kwh:.4f}/kWh")
+    st.success(f"💰 Sua parte da luz: **R$ {minha_parte:.2f}**")
 
 # ==========================================
 # 1. TELA DE LOGIN
