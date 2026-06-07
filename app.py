@@ -623,32 +623,42 @@ else:
             with col_qr2:
                 st.image(qr_bytes, caption=f"R$ {total_a_pagar:.2f} → {PIX_CHAVE}", use_container_width=True)
                 payload_pix = gerar_payload_pix(PIX_CHAVE, PIX_NOME, PIX_CIDADE, total_a_pagar, PIX_DESCRICAO)
-                st.markdown(f"""
-                    <div style="margin-top:10px; margin-bottom:20px;">
-                        <textarea id="pix_payload" style="display:none;">{payload_pix}</textarea>
-                        <button onclick="
-                            var t = document.getElementById('pix_payload').value;
-                            navigator.clipboard.writeText(t).then(function() {{
-                                var btn = document.getElementById('btn_copiar');
-                                btn.innerText = '✅ Copiado!';
-                                btn.style.backgroundColor = '#2E7D32';
+                import streamlit.components.v1 as components
+                components.html(f"""
+                    <button id="btn_copiar" onclick="
+                        var texto = `{payload_pix}`;
+                        if (navigator.clipboard && window.isSecureContext) {{
+                            navigator.clipboard.writeText(texto).then(function() {{
+                                document.getElementById('btn_copiar').innerText = '✅ Copiado!';
+                                document.getElementById('btn_copiar').style.backgroundColor = '#2E7D32';
                                 setTimeout(function() {{
-                                    btn.innerText = '📋 Copiar PIX Copia e Cola';
-                                    btn.style.backgroundColor = '#3E2723';
+                                    document.getElementById('btn_copiar').innerText = '📋 Copiar PIX Copia e Cola';
+                                    document.getElementById('btn_copiar').style.backgroundColor = '#3E2723';
                                 }}, 2500);
                             }});
-                        "
-                        id="btn_copiar"
-                        style="
-                            width:100%; padding:12px; font-size:15px; font-weight:bold;
-                            background-color:#3E2723; color:#FCEBE8;
-                            border:none; border-radius:8px; cursor:pointer;
-                            margin-top:6px;
-                        ">
-                            📋 Copiar PIX Copia e Cola
-                        </button>
-                    </div>
-                """, unsafe_allow_html=True)
+                        }} else {{
+                            var el = document.createElement('textarea');
+                            el.value = texto;
+                            el.style.position = 'absolute';
+                            el.style.left = '-9999px';
+                            document.body.appendChild(el);
+                            el.select();
+                            document.execCommand('copy');
+                            document.body.removeChild(el);
+                            document.getElementById('btn_copiar').innerText = '✅ Copiado!';
+                            document.getElementById('btn_copiar').style.backgroundColor = '#2E7D32';
+                            setTimeout(function() {{
+                                document.getElementById('btn_copiar').innerText = '📋 Copiar PIX Copia e Cola';
+                                document.getElementById('btn_copiar').style.backgroundColor = '#3E2723';
+                            }}, 2500);
+                        }}
+                    "
+                    style="width:100%;padding:12px;font-size:15px;font-weight:bold;
+                           background-color:#3E2723;color:#FCEBE8;border:none;
+                           border-radius:8px;cursor:pointer;margin-top:6px;margin-bottom:20px;">
+                        📋 Copiar PIX Copia e Cola
+                    </button>
+                """, height=60)
         else:
             st.info("QR Code disponível após o Admin lançar os valores do mês.")
 
