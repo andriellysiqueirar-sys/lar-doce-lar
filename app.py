@@ -149,6 +149,13 @@ st.markdown(f"""
     .stAppDeployButton {{ display:none!important; }}
     iframe {{ display:none!important; }}
 
+    /* ESCONDER WARNING DE MISSING SUBMIT BUTTON */
+    [data-testid="stFormSubmitButton"] {{ display:none!important; }}
+    div[class*="stAlert"] div[data-testid="stMarkdownContainer"] p {{ display:none!important; }}
+    div[role="alert"] {{ display:none!important; }}
+    .stException {{ display:none!important; }}
+    [data-baseweb="notification"] {{ display:none!important; }}
+
     /* EXPANDER — fundo sólido para legibilidade */
     [data-testid="stExpander"] {{
         background-color: #FDF5F3 !important;
@@ -442,17 +449,16 @@ if not st.session_state.logado:
     st.markdown("<h2 style='text-align:center;margin-top:15px;'>🏠 Lar doce Lar</h2>", unsafe_allow_html=True)
     st.markdown("<p style='text-align:center;color:#3E2723;'>Insira suas credenciais para acessar o portal</p>", unsafe_allow_html=True)
 
-    with st.form(key="login_form"):
-        usuario_input = st.text_input("Usuário")
-        senha_input   = st.text_input("Senha", type="password")
-        if st.form_submit_button("Entrar"):
-            if usuario_input in USUARIOS and USUARIOS[usuario_input]["senha"] == senha_input:
-                st.session_state.logado        = True
-                st.session_state.perfil        = USUARIOS[usuario_input]["perfil"]
-                st.session_state.usuario_atual = usuario_input
-                st.rerun()
-            else:
-                st.error("Usuário ou senha incorretos.")
+    usuario_input = st.text_input("Usuário")
+    senha_input   = st.text_input("Senha", type="password")
+    if st.button("Entrar", use_container_width=True):
+        if usuario_input in USUARIOS and USUARIOS[usuario_input]["senha"] == senha_input:
+            st.session_state.logado        = True
+            st.session_state.perfil        = USUARIOS[usuario_input]["perfil"]
+            st.session_state.usuario_atual = usuario_input
+            st.rerun()
+        else:
+            st.error("Usuário ou senha incorretos.")
 
 # ==========================================
 # 2. TELAS DO SISTEMA
