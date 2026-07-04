@@ -267,11 +267,20 @@ def buscar_leitura_anterior_sheets(mes):
 # DRIVE
 # ==========================================
 def buscar_arquivo_no_drive(nome):
+    # Busca exata pelo nome completo
     res = drive_service.files().list(
         q=f"'{PASTA_DRIVE_ID}' in parents and name='{nome}' and trashed=false",
-        fields="files(id)").execute()
+        fields="files(id,name)").execute()
     arqs = res.get('files', [])
-    return arqs[0]['id'] if arqs else None
+    if arqs:
+        return arqs[0]['id']
+    # Busca pelo nome sem extensão (name contains)
+    nome_sem_ext = nome.rsplit('.', 1)[0] if '.' in nome else nome
+    res2 = drive_service.files().list(
+        q=f"'{PASTA_DRIVE_ID}' in parents and name contains '{nome_sem_ext}' and trashed=false",
+        fields="files(id,name)").execute()
+    arqs2 = res2.get('files', [])
+    return arqs2[0]['id'] if arqs2 else None
 
 def upload_documento_drive(arquivo_st, nome_final):
     file_id = buscar_arquivo_no_drive(nome_final)
