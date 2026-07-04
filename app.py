@@ -518,8 +518,8 @@ else:
             with col_qr2:
                 st.image(qr_bytes, caption=f"R$ {total_a_pagar:.2f} → {PIX_CHAVE}", use_container_width=True)
 
-            st.markdown("<p style='text-align:center;font-size:14px;color:#3E2723;margin-bottom:4px;'>📋 <b>PIX Copia e Cola</b> — selecione e copie o código abaixo:</p>", unsafe_allow_html=True)
-            st.text_area("", value=payload_pix, height=90, key=f"pix_payload_{codigo_mes}", label_visibility="collapsed")
+            st.markdown("<p style='text-align:center;font-size:14px;color:#3E2723;margin-bottom:4px;'>📋 <b>PIX Copia e Cola</b> — clique no ícone de cópia no canto do código:</p>", unsafe_allow_html=True)
+            st.code(payload_pix, language=None)
             st.markdown("<div style='margin-bottom:20px;'></div>", unsafe_allow_html=True)
         else:
             st.info("QR Code disponível após o Admin lançar os valores do mês.")
