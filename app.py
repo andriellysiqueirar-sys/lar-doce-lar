@@ -4,6 +4,7 @@ import base64
 import json
 import qrcode
 import io as io_module
+from datetime import datetime
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload, MediaIoBaseDownload
@@ -54,6 +55,9 @@ USUARIOS = {
 for k, v in {"logado": False, "perfil": None, "usuario_atual": None}.items():
     if k not in st.session_state:
         st.session_state[k] = v
+
+# Índice do mês atual (0-based)
+MES_ATUAL_IDX = datetime.now().month - 1
 
 def obter_imagem_base64(caminho):
     if os.path.exists(caminho):
@@ -200,10 +204,10 @@ def salvar_dados_sheets(prefixo, val_luz, total_kwh, leitura_ant, leitura_at, va
         parte_amoreco_luz = round(preco_kwh * (leitura_at - leitura_ant), 2)
     else:
         parte_amoreco_luz = 0.0
-    parte_vicente_luz  = round(val_luz - parte_amoreco_luz, 2)
-    parte_agua_cada    = round(val_agua / 2, 2)
-    total_amoreco      = round(parte_amoreco_luz + parte_agua_cada + INTERNET_FIXO, 2)
-    total_vicente      = round(parte_vicente_luz + parte_agua_cada + INTERNET_FIXO, 2)
+    parte_vicente_luz = round(val_luz - parte_amoreco_luz, 2)
+    parte_agua_cada   = round(val_agua / 2, 2)
+    total_amoreco     = round(parte_amoreco_luz + parte_agua_cada + INTERNET_FIXO, 2)
+    total_vicente     = round(parte_vicente_luz + parte_agua_cada + INTERNET_FIXO, 2)
     nova_linha = [[
         prefixo, val_luz, total_kwh, leitura_ant, leitura_at, val_agua, INTERNET_FIXO,
         parte_amoreco_luz, parte_vicente_luz, parte_agua_cada, parte_agua_cada,
@@ -380,34 +384,38 @@ else:
         aba_subir, aba_historico = st.tabs(["🚀 Lançar Valores e Contas", "📊 Arquivos no Drive"])
 
         with aba_subir:
-            mes_ano      = st.selectbox("Selecione o Mês/Ano de referência:", LISTA_MESES, index=4)
+            mes_ano      = st.selectbox("Selecione o Mês/Ano de referência:", LISTA_MESES, index=MES_ATUAL_IDX)
             prefixo_data = MAPA_MESES[mes_ano]
+
             with st.spinner("Carregando dados do mês..."):
                 dados_mes = carregar_dados_sheets(prefixo_data)
+
             if dados_mes:
-                luz_fatura=dados_mes["val_luz"]; kwh_fatura=dados_mes["total_kwh"]
-                medidor_ant=dados_mes["leitura_ant"]; leitura_at=dados_mes["leitura_at"]
-                agua_fatura=dados_mes["val_agua"]
+                luz_fatura  = dados_mes["val_luz"]
+                kwh_fatura  = dados_mes["total_kwh"]
+                medidor_ant = dados_mes["leitura_ant"]
+                leitura_at  = dados_mes["leitura_at"]
+                agua_fatura = dados_mes["val_agua"]
             else:
-                luz_fatura=kwh_fatura=leitura_at=agua_fatura=0.0
-                medidor_ant=buscar_leitura_anterior_sheets(mes_ano)
+                luz_fatura = kwh_fatura = leitura_at = agua_fatura = 0.0
+                medidor_ant = buscar_leitura_anterior_sheets(mes_ano)
 
             st.markdown("#### ⚡ Fatura de Energia - COPEL")
             col_l1, col_l2 = st.columns(2)
             with col_l1:
-                val_luz   = st.number_input("Valor Total da Fatura Copel (R$)", min_value=0.0, step=0.01, value=luz_fatura, key="adm_luz_tot")
+                val_luz   = st.number_input("Valor Total da Fatura Copel (R$)", min_value=0.0, step=0.01, value=luz_fatura, key=f"adm_luz_{prefixo_data}")
             with col_l2:
-                total_kwh = st.number_input("Consumo Total de kW/h", min_value=0.0, step=0.1, value=kwh_fatura, key="adm_kwh_tot")
+                total_kwh = st.number_input("Consumo Total de kW/h", min_value=0.0, step=0.1, value=kwh_fatura, key=f"adm_kwh_{prefixo_data}")
 
             st.markdown("#### 🔍 Medidor Interno (Dry / Rafa)")
             col_m1, col_m2 = st.columns(2)
             with col_m1:
-                leitura_ant_input = st.number_input("Leitura Anterior", min_value=0.0, step=0.1, value=medidor_ant)
+                leitura_ant_input = st.number_input("Leitura Anterior", min_value=0.0, step=0.1, value=medidor_ant, key=f"adm_lant_{prefixo_data}")
             with col_m2:
-                leitura_at_input  = st.number_input("Leitura Atual",    min_value=0.0, step=0.1, value=leitura_at)
+                leitura_at_input  = st.number_input("Leitura Atual", min_value=0.0, step=0.1, value=leitura_at, key=f"adm_lat_{prefixo_data}")
 
             st.markdown("#### 💧 Fatura de Água SANEPAR")
-            val_agua = st.number_input("Valor Total da Conta de Água (R$)", min_value=0.0, step=0.01, value=agua_fatura, key="adm_agua_tot")
+            val_agua = st.number_input("Valor Total da Conta de Água (R$)", min_value=0.0, step=0.01, value=agua_fatura, key=f"adm_agua_{prefixo_data}")
             st.markdown(f"#### 🌐 Internet — Valor fixo: **R$ {INTERNET_FIXO:.2f}** por família")
 
             st.markdown("---")
@@ -456,7 +464,7 @@ else:
         else:
             st.markdown("<h3 style='text-align:center;color:#3E2723;'>👋 Bem-vindo ao Espaço da Família!</h3>", unsafe_allow_html=True)
 
-        mes_selecionado = st.selectbox("Selecione o Mês/Ano:", LISTA_MESES, index=4)
+        mes_selecionado = st.selectbox("Selecione o Mês/Ano:", LISTA_MESES, index=MES_ATUAL_IDX)
         codigo_mes      = MAPA_MESES[mes_selecionado]
 
         with st.spinner("Carregando valores..."):
@@ -464,16 +472,20 @@ else:
 
         if dados:
             if eh_marido:
-                parte_luz=dados["parte_amoreco_luz"]; parte_agua=dados["parte_amoreco_agua"]
-                parte_internet=dados["parte_amoreco_internet"]; total_a_pagar=dados["total_amoreco"]
-                titulo_detalhe="📝 Detalhamento dos Gastos (Dry / Rafa)"
+                parte_luz      = dados["parte_amoreco_luz"]
+                parte_agua     = dados["parte_amoreco_agua"]
+                parte_internet = dados["parte_amoreco_internet"]
+                total_a_pagar  = dados["total_amoreco"]
+                titulo_detalhe = "📝 Detalhamento dos Gastos (Dry / Rafa)"
             else:
-                parte_luz=dados["parte_vicente_luz"]; parte_agua=dados["parte_vicente_agua"]
-                parte_internet=dados["parte_vicente_internet"]; total_a_pagar=dados["total_vicente"]
-                titulo_detalhe="📝 Detalhamento dos Gastos (Gaby / Mandy)"
+                parte_luz      = dados["parte_vicente_luz"]
+                parte_agua     = dados["parte_vicente_agua"]
+                parte_internet = dados["parte_vicente_internet"]
+                total_a_pagar  = dados["total_vicente"]
+                titulo_detalhe = "📝 Detalhamento dos Gastos (Gaby / Mandy)"
         else:
-            parte_luz=parte_agua=parte_internet=total_a_pagar=0.0
-            titulo_detalhe="📝 Detalhamento dos Gastos"
+            parte_luz = parte_agua = parte_internet = total_a_pagar = 0.0
+            titulo_detalhe = "📝 Detalhamento dos Gastos"
 
         # RESUMO
         st.markdown(f"""
@@ -497,20 +509,8 @@ else:
             with col_qr2:
                 st.image(qr_bytes, caption=f"R$ {total_a_pagar:.2f} → {PIX_CHAVE}", use_container_width=True)
 
-            # PIX COPIA E COLA — text_area visível + botão nativo de copiar
-            st.markdown("<p style='text-align:center;font-size:14px;color:#3E2723;margin-bottom:4px;'>📋 <b>PIX Copia e Cola</b> — selecione e copie, ou use o botão:</p>", unsafe_allow_html=True)
-            st.text_area("", value=payload_pix, height=90, key="pix_payload_area", label_visibility="collapsed")
-            if st.button("📋 Copiar código PIX", use_container_width=True, key="btn_copiar_pix"):
-                st.session_state["pix_copiado"] = True
-            if st.session_state.get("pix_copiado"):
-                st.markdown(f"""
-                    <script>
-                    navigator.clipboard.writeText(`{payload_pix}`);
-                    </script>
-                """, unsafe_allow_html=True)
-                st.success("✅ Código copiado! Cole no seu app bancário para pagar.")
-                st.session_state["pix_copiado"] = False
-
+            st.markdown("<p style='text-align:center;font-size:14px;color:#3E2723;margin-bottom:4px;'>📋 <b>PIX Copia e Cola</b> — selecione e copie o código abaixo:</p>", unsafe_allow_html=True)
+            st.text_area("", value=payload_pix, height=90, key=f"pix_payload_{codigo_mes}", label_visibility="collapsed")
             st.markdown("<div style='margin-bottom:20px;'></div>", unsafe_allow_html=True)
         else:
             st.info("QR Code disponível após o Admin lançar os valores do mês.")
